@@ -1,0 +1,350 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { X, Package, Calendar, DollarSign, Eye, ArrowLeft } from "lucide-react"
+import { betelAPI, type Customer } from "@/lib/api"
+
+interface Order {
+  id: string
+  codigo?: string
+  numero?: string
+  situacao?: string
+  nome_situacao?: string // Added nome_situacao field for proper status display
+  status?: string
+  data?: string
+  data_criacao?: string // Added data_criacao field
+  total?: number
+  valor_total?: number
+  produtos?: any[]
+  items?: any[]
+  quantidade_produtos?: number // Added quantidade_produtos field
+}
+
+interface OrderDetail {
+  id: string
+  codigo?: string
+  numero?: string
+  situacao?: string
+  nome_situacao?: string
+  data?: string
+  data_criacao?: string
+  total?: number
+  valor_total?: number
+  produtos?: Array<{
+    produto: {
+      id: string
+      nome_produto: string
+      quantidade: string
+      valor_venda: string
+      valor_total: string
+    }
+  }>
+  cliente?: {
+    nome: string
+    cpf?: string
+    cnpj?: string
+  }
+  observacoes?: string
+}
+
+interface CustomerOrdersProps {
+  customer: Customer
+  isOpen: boolean
+  onClose: () => void
+}
+
+export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProps) {
+  const [orders, setOrders] = useState<Order[]>([])
+  const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isOpen && customer.id) {
+      fetchOrders()
+    }
+  }, [isOpen, customer.id])
+
+  const fetchOrders = async () => {
+    if (!customer.id) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await betelAPI.getCustomerQuotes(customer.id)
+      setOrders(response || [])
+    } catch (err) {
+      console.error("Error fetching orders:", err)
+      setError("Erro ao carregar pedidos")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchOrderDetail = async (orderId: string) => {
+    setDetailLoading(true)
+    setError(null)
+
+    try {
+      const response = await betelAPI.getOrderDetail(orderId)
+      setSelectedOrder(response)
+    } catch (err) {
+      console.error("Error fetching order details:", err)
+      setError("Erro ao carregar detalhes do pedido")
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  const formatCurrency = (value: number | string | undefined) => {
+    const numValue = typeof value === "string" ? Number.parseFloat(value) : value || 0
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(numValue)
+  }
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "Data não informada"
+    try {
+      return new Date(dateString).toLocaleDateString("pt-BR")
+    } catch {
+      return dateString
+    }
+  }
+
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return "secondary"
+
+    const statusLower = status.toLowerCase()
+    if (statusLower.includes("aprovado") || statusLower.includes("confirmado")) return "default"
+    if (statusLower.includes("pendente") || statusLower.includes("aguardando")) return "secondary"
+    if (statusLower.includes("cancelado") || statusLower.includes("rejeitado")) return "destructive"
+    return "secondary"
+  }
+
+  const getProductCount = (order: Order) => {
+    if (order.quantidade_produtos) return order.quantidade_produtos
+    if (order.produtos?.length) return order.produtos.length
+    if (order.items?.length) return order.items.length
+    return 0
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <Card className="w-full max-w-4xl max-h-[80vh] overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div className="flex items-center gap-2">
+            {selectedOrder && (
+              <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)}>
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            )}
+            <CardTitle className="text-xl font-bold">
+              {selectedOrder ? "Detalhes do Pedido" : "Consultar Pedidos"}
+            </CardTitle>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </CardHeader>
+
+        <CardContent className="overflow-y-auto max-h-[60vh]">
+          {selectedOrder ? (
+            <div className="space-y-6">
+              {detailLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center space-y-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto"></div>
+                    <p className="text-muted-foreground">Carregando detalhes...</p>
+                  </div>
+                </div>
+              )}
+
+              {!detailLoading && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-2">Informações do Pedido</h3>
+                        <div className="space-y-2 text-sm">
+                          <p>
+                            <strong>Código:</strong>{" "}
+                            {selectedOrder.codigo || selectedOrder.numero || `#${selectedOrder.id}`}
+                          </p>
+                          <p>
+                            <strong>Status:</strong>
+                            <Badge
+                              variant={getStatusColor(selectedOrder.nome_situacao || selectedOrder.situacao)}
+                              className="ml-2"
+                            >
+                              {selectedOrder.nome_situacao || selectedOrder.situacao || "Status não informado"}
+                            </Badge>
+                          </p>
+                          <p>
+                            <strong>Data:</strong> {formatDate(selectedOrder.data_criacao || selectedOrder.data)}
+                          </p>
+                          <p>
+                            <strong>Total:</strong> {formatCurrency(selectedOrder.total || selectedOrder.valor_total)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-2">Cliente</h3>
+                        <div className="space-y-2 text-sm">
+                          <p>
+                            <strong>Nome:</strong> {selectedOrder.cliente?.nome || customer.nome}
+                          </p>
+                          {selectedOrder.cliente?.cpf && (
+                            <p>
+                              <strong>CPF:</strong> {selectedOrder.cliente.cpf}
+                            </p>
+                          )}
+                          {selectedOrder.cliente?.cnpj && (
+                            <p>
+                              <strong>CNPJ:</strong> {selectedOrder.cliente.cnpj}
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {selectedOrder.produtos && selectedOrder.produtos.length > 0 && (
+                    <Card>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-4">Produtos ({selectedOrder.produtos.length} itens)</h3>
+                        <div className="space-y-3">
+                          {selectedOrder.produtos.map((item, index) => (
+                            <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                              <div className="flex-1">
+                                <p className="font-medium">{item.produto.nome_produto}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Quantidade: {item.produto.quantidade} | Valor unitário:{" "}
+                                  {formatCurrency(item.produto.valor_venda)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold">{formatCurrency(item.produto.valor_total)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {selectedOrder.observacoes && (
+                    <Card>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-2">Observações</h3>
+                        <p className="text-sm">{selectedOrder.observacoes}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              {loading && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center space-y-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto"></div>
+                    <p className="text-muted-foreground">Carregando pedidos...</p>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="text-center py-8">
+                  <p className="text-destructive">{error}</p>
+                  <Button variant="outline" onClick={fetchOrders} className="mt-4 bg-transparent">
+                    Tentar novamente
+                  </Button>
+                </div>
+              )}
+
+              {!loading && !error && orders.length === 0 && (
+                <div className="text-center py-8 space-y-4">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto" />
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium">Nenhum pedido encontrado</h3>
+                    <p className="text-muted-foreground">Você ainda não possui pedidos pendentes ou finalizados.</p>
+                  </div>
+                </div>
+              )}
+
+              {!loading && !error && orders.length > 0 && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Encontrados {orders.length} pedido(s) para {customer.nome}
+                  </p>
+
+                  {orders.map((order) => (
+                    <Card key={order.id} className="border-l-4 border-l-accent">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Package className="w-4 h-4 text-muted-foreground" />
+                              <span className="font-medium">
+                                {order.codigo || order.numero || `Pedido #${order.id}`}
+                              </span>
+                            </div>
+                            <Badge variant={getStatusColor(order.nome_situacao || order.situacao)}>
+                              {order.nome_situacao || order.situacao || "Status não informado"}
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">{formatDate(order.data_criacao || order.data)}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{getProductCount(order)} produto(s)</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-muted-foreground" />
+                              <span className="font-medium text-accent">
+                                {formatCurrency(order.total || order.valor_total)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => fetchOrderDetail(order.id)}
+                              className="bg-transparent"
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Detalhar
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
