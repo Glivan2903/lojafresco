@@ -75,12 +75,18 @@ export default function PrintQuotePage() {
           </div>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">ORÇAMENTO</h2>
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="text-left">
+            <div className="text-left space-y-1">
               <p>
-                <strong>CNPJ:</strong> 00.000.000/0001-00 | <strong>Tel:</strong> (79) 99981-3003
+                <strong>Icore</strong>
               </p>
               <p>
-                <strong>Email:</strong> contato@ayladigital.com.br
+                Rua da paz N: 92, Bairro: Pirajá
+              </p>
+              <p>
+                Juazeiro do Norte - CE
+              </p>
+              <p>
+                <strong>Tel:</strong> (88) 8863-8990
               </p>
             </div>
             <div className="text-right">
@@ -208,9 +214,9 @@ export default function PrintQuotePage() {
 
         <div className="text-center text-xs text-gray-600 border-t border-gray-300 pt-2">
           <p>
-            <strong>AYLA DIGITAL</strong> | Tel: (79) 99981-3003 | contato@ayladigital.com.br
+            <strong>ICORE</strong> | Tel: (88) 8863-8990 | Endereço: Rua da paz N: 92, Juazeiro do Norte - CE
           </p>
-          <p>Seg-Sex: 8h-18h | Sáb: 8h-12h | Gerado em {new Date().toLocaleString("pt-BR")}</p>
+          <p>Seg e Sex: 08:00 às 18:00 | Sáb: 08 às 13 | Gerado em {new Date().toLocaleString("pt-BR")}</p>
         </div>
       </div>
 

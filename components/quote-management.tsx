@@ -91,7 +91,7 @@ export function QuoteManagement({
 
   const generateQuoteText = () => {
     const total = calculateTotal()
-    let text = `*PEDIDO - ICORE SYSTEM*\n\n`
+    let text = `*PEDIDO - ICORE*\n\n`
 
     // Customer Data
     text += `*DADOS DO CLIENTE*\n`
@@ -142,7 +142,7 @@ export function QuoteManagement({
   const shareViaWhatsApp = () => {
     const text = generateQuoteText()
     const encodedText = encodeURIComponent(text)
-    const whatsappUrl = `https://wa.me/5579998130038?text=${encodedText}`
+    const whatsappUrl = `https://wa.me/558888638990?text=${encodedText}`
     window.open(whatsappUrl, "_blank")
   }
 

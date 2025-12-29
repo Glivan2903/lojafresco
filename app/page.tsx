@@ -309,14 +309,9 @@ ${orderData.observations ? `OBSERVAÇÕES ADICIONAIS:\n${orderData.observations}
         )}
 
         {appState === "products" && (
-          <div className="container mx-auto px-4 py-8">
-            <div className="space-y-6">
-              <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold text-balance">Nossos Produtos e Serviços</h2>
-                <p className="text-muted-foreground text-balance">
-                  Explore nossa seleção de produtos e adicione ao seu orçamento
-                </p>
-              </div>
+          <div className="container mx-auto px-4 py-2">
+            <div className="space-y-2">
+
               <ProductCatalog
                 customer={customer}
                 onAddToQuote={handleAddToQuote}

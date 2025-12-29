@@ -67,7 +67,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
   useEffect(() => {
     loadProducts()
-  }, [currentPage, selectedCategory, onlyAvailable])
+  }, [selectedCategory, onlyAvailable])
 
   useEffect(() => {
     filterProducts()
@@ -95,7 +95,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
       let response
       if (selectedCategory !== "all") {
-        console.log("[v0] Fetching products with POST for category:", selectedCategory, "page:", currentPage, "available:", onlyAvailable)
+        console.log("[v0] Fetching ALL products with POST for category:", selectedCategory, "available:", onlyAvailable)
         response = await fetch(`/api/produtos`, {
           method: "POST",
           headers: {
@@ -103,28 +103,25 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
           },
           body: JSON.stringify({
             grupo_id: selectedCategory,
-            page: currentPage,
             available: onlyAvailable,
           }),
         })
       } else {
-        console.log("[v0] Fetching all products with GET, page:", currentPage, "available:", onlyAvailable)
-        response = await fetch(`/api/produtos?page=${currentPage}&available=${onlyAvailable}`)
+        console.log("[v0] Fetching ALL products with GET, available:", onlyAvailable)
+        response = await fetch(`/api/produtos?available=${onlyAvailable}`)
       }
 
       const data = await response.json()
 
       console.log("[v0] Products response:", {
         products_count: data.data?.length,
-        current_page: data.pagina_atual,
-        total_pages: data.total_paginas,
         total_products: data.total_produtos,
       })
 
       if (data.data && Array.isArray(data.data)) {
         setProducts(data.data)
-        setTotalPages(data.total_paginas || 1)
-        setTotalProducts(data.total_produtos || 0)
+        setTotalPages(Math.ceil(data.data.length / 15) || 1)
+        setTotalProducts(data.data.length)
       } else {
         setProducts([])
         setError("Nenhum produto encontrado")
@@ -376,10 +373,10 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Mostrando {filteredProducts.length} de {totalProducts} produtos
+            Mostrando {Math.min((currentPage - 1) * 15 + 1, filteredProducts.length)}-{Math.min(currentPage * 15, filteredProducts.length)} de {filteredProducts.length} produtos
           </span>
           <span>
-            Página {currentPage} de {totalPages}
+            Página {currentPage} de {Math.ceil(filteredProducts.length / 15) || 1}
           </span>
         </div>
       </div>
@@ -392,7 +389,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
       {viewMode === "card" ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-          {filteredProducts.map((product) => {
+          {filteredProducts.slice((currentPage - 1) * 15, currentPage * 15).map((product) => {
             const quantity = productQuantities[product.id] || 1
             const availableStock = getAvailableStock(product)
             const isOutOfStock = availableStock <= 0
@@ -531,7 +528,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredProducts.map((product) => {
+          {filteredProducts.slice((currentPage - 1) * 15, currentPage * 15).map((product) => {
             const quantity = productQuantities[product.id] || 1
             const availableStock = getAvailableStock(product)
             const isOutOfStock = availableStock <= 0

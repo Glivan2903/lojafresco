@@ -18,33 +18,13 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
   try {
     console.log(`[v0] Server API: Fetching products page ${page}, group: ${grupoId}, available: ${onlyAvailable}`)
 
-    // We fetch all products (or filtered by group) then manually paginate
-    // This is because the upstream API pagination might not align with our filtering needs
-    // or if we need to filter by stock AFTER fetching from upstream.
-    // However, if the upstream API supports stock filtering, we should use it.
-    // Based on previous code, we were fetching one page from upstream or all from group.
-    // To ensure we have enough items to fill a page after filtering, fetching all might be safer 
-    // but less performant. 
-    // Let's try to stick to the pattern of fetching all for the group/search if possible,
-    // or if we must use upstream pagination, we might have issues if we filter clientside.
+    // We pass the page parameter directly to the upstream API
+    // This allows fetching subsequent pages (e.g., ?pagina=2)
+    let url = `${API_BASE_URL}/produtos?pagina=${page}`
 
-    // The previous implementation for POST (category filter) was:
-    // 1. Fetch ALL products for the category (API_BASE_URL/produtos, body: { grupo_id })
-    // 2. Client-side paginate in route.ts (slice)
+    // Attempt to pass limit if supported, otherwise rely on default
+    url += `&limite=${PRODUCTS_PER_PAGE}`
 
-    // The previous implementation for GET (no category) was:
-    // 1. Fetch ONE page from upstream (API_BASE_URL/produtos?pagina=X)
-    // 2. Return that page.
-
-    // To implement "In Stock" filter consistently, we really need to fetch ALL products first, 
-    // filter them, and then paginate. The upstream pagination is likely strict.
-    // If we rely on upstream pagination `?pagina=X`, we can't easily filter out out-of-stock items 
-    // without potentially having empty pages.
-
-    // CHANGE STRICTLY: We will use the "Fetch ALL" strategy for both GET and POST to ensure 
-    // we can filter and pagination correctly.
-
-    let url = `${API_BASE_URL}/produtos`
     let method = "GET"
     let body = null
     const headers = {
@@ -59,16 +39,6 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
       body = JSON.stringify({ grupo_id: grupoId })
     }
 
-    // Note: If we just GET /produtos without params, does it return ALL? 
-    // The original code used /produtos?pagina=${page}.
-    // If we want ALL, maybe we don't pass page?
-    // Let's assume GET /produtos returns all or we might need to iterate.
-    // For now, let's try GET /produtos (no page) and see if it returns all.
-    // If unsafe, we might have to stick to original logic but we might return fewer than 12 items.
-    // BUT the requirement is "lower limit" (12).
-
-    // Let's proceed with fetching ALL to allow proper filtering.
-
     const response = await fetch(url, {
       method,
       headers,
@@ -80,24 +50,30 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
     }
 
     const data = await response.json()
-    let allProducts = data.data || []
+    let products = data.data || []
 
     // 1. Filter by availability if requested
+    // Note: This reduces the page size if items are filtered out, 
+    // but ensures we don't show out-of-stock items.
     if (onlyAvailable) {
-      allProducts = filterAvailableProducts(allProducts)
+      products = filterAvailableProducts(products)
     }
 
-    // 2. Calculate Manual Pagination
-    const totalProducts = allProducts.length
-    const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE)
-    const startIndex = (page - 1) * PRODUCTS_PER_PAGE
-    const endIndex = startIndex + PRODUCTS_PER_PAGE
-    const paginatedProducts = allProducts.slice(startIndex, endIndex)
+    // Try to find total count from upstream response
+    // Common keys: total_registros, total, count, meta.total
+    const totalRemote = data.total_registros || data.total || data.count || (data.meta && data.meta.total) || 0
+
+    // Fallback logic for total pages if upstream doesn't provide it
+    // If we have products, assume there might be at least this many. 
+    // If we received a full page, assume there's more.
+    const estimatedTotal = totalRemote || (products.length === PRODUCTS_PER_PAGE ? (page + 1) * PRODUCTS_PER_PAGE : page * PRODUCTS_PER_PAGE)
+
+    const totalPages = Math.ceil(estimatedTotal / PRODUCTS_PER_PAGE)
 
     return {
-      products: paginatedProducts,
+      products: products,
       meta: {
-        total_registros: totalProducts,
+        total_registros: totalRemote || estimatedTotal,
         total_paginas: totalPages,
         pagina_atual: page,
         limite_por_pagina: PRODUCTS_PER_PAGE,
@@ -109,14 +85,74 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
   }
 }
 
+async function fetchAllProductsFromUpstream(grupoId?: string, onlyAvailable = false) {
+  try {
+    console.log(`[v0] Server API: Fetching ALL products (iterative), group: ${grupoId}, available: ${onlyAvailable}`)
+
+    let allProducts: any[] = []
+    let page = 1
+    let keepFetching = true
+    const SAFETY_LIMIT = 50 // Avoid infinite loops
+
+    while (keepFetching && page <= SAFETY_LIMIT) {
+      console.log(`[v0] Server API: Fetching page ${page}...`)
+      const result = await fetchProductsPage(page, grupoId, false)
+
+      if (result.products.length > 0) {
+        allProducts = allProducts.concat(result.products)
+      }
+
+      // If we received fewer items than the limit, we've reached the end
+      if (result.products.length < PRODUCTS_PER_PAGE) {
+        keepFetching = false
+        console.log(`[v0] Server API: Reached end of stream at page ${page} with ${result.products.length} items`)
+      } else {
+        // If we got a full page, check if the upstream reported total pages matches our current page
+        if (result.meta.total_paginas && page >= result.meta.total_paginas) {
+          keepFetching = false
+          console.log(`[v0] Server API: Reached reported total pages ${result.meta.total_paginas}`)
+        } else {
+          page++
+        }
+      }
+    }
+
+    // 3. Filter if needed
+    if (onlyAvailable) {
+      allProducts = filterAvailableProducts(allProducts)
+    }
+
+    console.log(`[v0] Server API: Total products fetched and filtered: ${allProducts.length}`)
+
+    return {
+      products: allProducts,
+      meta: {
+        total_registros: allProducts.length,
+        total_paginas: 1,
+        pagina_atual: 1,
+        limite_por_pagina: allProducts.length,
+      },
+    }
+  } catch (error) {
+    console.error("[v0] Server API: Error fetching all products:", error)
+    throw error
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
+    const hasPageParam = searchParams.has("page")
     const page = Number.parseInt(searchParams.get("page") || "1")
     const grupoId = searchParams.get("grupo_id") || undefined
     const available = searchParams.get("available") === "true"
 
-    const result = await fetchProductsPage(page, grupoId, available)
+    let result
+    if (hasPageParam) {
+      result = await fetchProductsPage(page, grupoId, available)
+    } else {
+      result = await fetchAllProductsFromUpstream(grupoId, available)
+    }
 
     return NextResponse.json({
       data: result.products,
@@ -137,9 +173,17 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { grupo_id, page = 1, available = false } = body
+    const { grupo_id, page, available = false } = body
 
-    const result = await fetchProductsPage(page, grupo_id, available)
+    // Check if page is explicitly provided (not undefined/null)
+    const hasPageParam = page !== undefined && page !== null
+
+    let result
+    if (hasPageParam) {
+      result = await fetchProductsPage(Number(page) || 1, grupo_id, available)
+    } else {
+      result = await fetchAllProductsFromUpstream(grupo_id, available)
+    }
 
     return NextResponse.json({
       data: result.products,
