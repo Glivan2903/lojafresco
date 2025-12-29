@@ -14,16 +14,16 @@ function filterAvailableProducts(products: any[]) {
   })
 }
 
-async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = false) {
+async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = false, limit = PRODUCTS_PER_PAGE) {
   try {
-    console.log(`[v0] Server API: Fetching products page ${page}, group: ${grupoId}, available: ${onlyAvailable}`)
+    console.log(`[v0] Server API: Fetching products page ${page}, group: ${grupoId}, available: ${onlyAvailable}, limit: ${limit}`)
 
     // We pass the page parameter directly to the upstream API
     // This allows fetching subsequent pages (e.g., ?pagina=2)
     let url = `${API_BASE_URL}/produtos?pagina=${page}`
 
     // Attempt to pass limit if supported, otherwise rely on default
-    url += `&limite=${PRODUCTS_PER_PAGE}`
+    url += `&limite=${limit}`
 
     let method = "GET"
     let body = null
@@ -66,9 +66,9 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
     // Fallback logic for total pages if upstream doesn't provide it
     // If we have products, assume there might be at least this many. 
     // If we received a full page, assume there's more.
-    const estimatedTotal = totalRemote || (products.length === PRODUCTS_PER_PAGE ? (page + 1) * PRODUCTS_PER_PAGE : page * PRODUCTS_PER_PAGE)
+    const estimatedTotal = totalRemote || (products.length === limit ? (page + 1) * limit : page * limit)
 
-    const totalPages = Math.ceil(estimatedTotal / PRODUCTS_PER_PAGE)
+    const totalPages = Math.ceil(estimatedTotal / limit)
 
     return {
       products: products,
@@ -76,7 +76,7 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
         total_registros: totalRemote || estimatedTotal,
         total_paginas: totalPages,
         pagina_atual: page,
-        limite_por_pagina: PRODUCTS_PER_PAGE,
+        limite_por_pagina: limit,
       },
     }
   } catch (error) {
@@ -92,18 +92,20 @@ async function fetchAllProductsFromUpstream(grupoId?: string, onlyAvailable = fa
     let allProducts: any[] = []
     let page = 1
     let keepFetching = true
-    const SAFETY_LIMIT = 50 // Avoid infinite loops
+    const SAFETY_LIMIT = 500 // Avoid infinite loops (allow up to 500 pages)
+    const BATCH_SIZE = 100 // Try to fetch more per page to reduce requests
 
     while (keepFetching && page <= SAFETY_LIMIT) {
-      console.log(`[v0] Server API: Fetching page ${page}...`)
-      const result = await fetchProductsPage(page, grupoId, false)
+      console.log(`[v0] Server API: Fetching page ${page} with limit ${BATCH_SIZE}...`)
+      // Use BATCH_SIZE for faster fetching
+      const result = await fetchProductsPage(page, grupoId, false, BATCH_SIZE)
 
       if (result.products.length > 0) {
         allProducts = allProducts.concat(result.products)
       }
 
       // If we received fewer items than the limit, we've reached the end
-      if (result.products.length < PRODUCTS_PER_PAGE) {
+      if (result.products.length < BATCH_SIZE) {
         keepFetching = false
         console.log(`[v0] Server API: Reached end of stream at page ${page} with ${result.products.length} items`)
       } else {
