@@ -418,7 +418,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
       )}
 
       {!loading && products.length > 0 && viewMode === "card" && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2">
           {products.map((product) => {
             const quantity = productQuantities[product.id] || 1
             const availableStock = getAvailableStock(product)
