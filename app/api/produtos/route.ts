@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.API_BASE_URL || ""
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN || ""
 const SECRET_ACCESS_TOKEN = process.env.SECRET_ACCESS_TOKEN || ""
 
-const PRODUCTS_PER_PAGE = 15
+const PRODUCTS_PER_PAGE = 100
 
 // Helper to filter available products
 function filterAvailableProducts(products: any[]) {
@@ -14,35 +14,42 @@ function filterAvailableProducts(products: any[]) {
   })
 }
 
-async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = false, limit = PRODUCTS_PER_PAGE) {
+async function fetchProductsPage(
+  page = 1,
+  grupoId?: string,
+  onlyAvailable = false,
+  limit = PRODUCTS_PER_PAGE,
+  nome?: string, // New parameter for search
+) {
   try {
-    console.log(`[v0] Server API: Fetching products page ${page}, group: ${grupoId}, available: ${onlyAvailable}, limit: ${limit}`)
+    console.log(
+      `[v0] Server API: Fetching products page ${page}, group: ${grupoId}, available: ${onlyAvailable}, limit: ${limit}, nome: ${nome}`,
+    )
 
     // We pass the page parameter directly to the upstream API
-    // This allows fetching subsequent pages (e.g., ?pagina=2)
     let url = `${API_BASE_URL}/produtos?pagina=${page}`
 
     // Attempt to pass limit if supported, otherwise rely on default
     url += `&limite=${limit}`
 
-    let method = "GET"
-    let body = null
-    const headers = {
-      accept: "application/json",
-      "access-token": ACCESS_TOKEN,
-      "secret-access-token": SECRET_ACCESS_TOKEN,
-      "Content-Type": "application/json",
+    // Add search term if provided
+    if (nome) {
+      url += `&nome=${encodeURIComponent(nome)}`
     }
 
+    // Add group_id if provided (can be passed as query param too, based on instructions)
     if (grupoId) {
-      method = "POST"
-      body = JSON.stringify({ grupo_id: grupoId })
+      url += `&grupo_id=${grupoId}`
     }
 
     const response = await fetch(url, {
-      method,
-      headers,
-      ...(body && { body }),
+      method: "GET", // Changing to GET as per instructions which use query params for everything
+      headers: {
+        accept: "application/json",
+        "access-token": ACCESS_TOKEN,
+        "secret-access-token": SECRET_ACCESS_TOKEN,
+        "Content-Type": "application/json",
+      },
     })
 
     if (!response.ok) {
@@ -53,7 +60,7 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
     let products = data.data || []
 
     // 1. Filter by availability if requested
-    // Note: This reduces the page size if items are filtered out, 
+    // Note: This reduces the page size if items are filtered out,
     // but ensures we don't show out-of-stock items.
     if (onlyAvailable) {
       products = filterAvailableProducts(products)
@@ -64,7 +71,7 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
     const totalRemote = data.total_registros || data.total || data.count || (data.meta && data.meta.total) || 0
 
     // Fallback logic for total pages if upstream doesn't provide it
-    // If we have products, assume there might be at least this many. 
+    // If we have products, assume there might be at least this many.
     // If we received a full page, assume there's more.
     const estimatedTotal = totalRemote || (products.length === limit ? (page + 1) * limit : page * limit)
 
@@ -86,6 +93,8 @@ async function fetchProductsPage(page = 1, grupoId?: string, onlyAvailable = fal
 }
 
 async function fetchAllProductsFromUpstream(grupoId?: string, onlyAvailable = false) {
+  // This function is kept for backward compatibility but might be less used now
+  // that we are moving to server-side pagination.
   try {
     console.log(`[v0] Server API: Fetching ALL products (iterative), group: ${grupoId}, available: ${onlyAvailable}`)
 
@@ -144,17 +153,18 @@ async function fetchAllProductsFromUpstream(grupoId?: string, onlyAvailable = fa
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const hasPageParam = searchParams.has("page")
+    // Always use page-based fetching if parameters are present, or default to page 1
     const page = Number.parseInt(searchParams.get("page") || "1")
     const grupoId = searchParams.get("grupo_id") || undefined
     const available = searchParams.get("available") === "true"
+    const nome = searchParams.get("nome") || undefined
+    const limit = Number.parseInt(searchParams.get("limit") || String(PRODUCTS_PER_PAGE))
 
     let result
-    if (hasPageParam) {
-      result = await fetchProductsPage(page, grupoId, available)
-    } else {
-      result = await fetchAllProductsFromUpstream(grupoId, available)
-    }
+    // If specific "all" flag or no pagination params were traditionally used, we might use fetchAll
+    // But for now, let's default to paginated fetching which is more efficient.
+    // If the client REALLY wants everything, they loop. But usually they want a page.
+    result = await fetchProductsPage(page, grupoId, available, limit, nome)
 
     return NextResponse.json({
       data: result.products,
@@ -165,27 +175,17 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error("[v0] Server API: Error in GET /api/produtos:", error)
-    return NextResponse.json(
-      { error: "Erro ao carregar produtos", data: [], meta: {} },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Erro ao carregar produtos", data: [], meta: {} }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { grupo_id, page, available = false } = body
+    const { grupo_id, page, available = false, nome } = body
+    const limit = body.limit || PRODUCTS_PER_PAGE
 
-    // Check if page is explicitly provided (not undefined/null)
-    const hasPageParam = page !== undefined && page !== null
-
-    let result
-    if (hasPageParam) {
-      result = await fetchProductsPage(Number(page) || 1, grupo_id, available)
-    } else {
-      result = await fetchAllProductsFromUpstream(grupo_id, available)
-    }
+    const result = await fetchProductsPage(Number(page) || 1, grupo_id, available, limit, nome)
 
     return NextResponse.json({
       data: result.products,

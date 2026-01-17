@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -31,6 +31,7 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { betelAPI, type Product, type Customer, type Category } from "@/lib/api"
+import { useDebounce } from "use-debounce"
 
 interface ProductCatalogProps {
   customer: Customer
@@ -45,15 +46,14 @@ interface ProductWithQuantity extends Product {
 
 export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteItems = [] }: ProductCatalogProps) {
   const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [onlyAvailable, setOnlyAvailable] = useState(false)
   const [productQuantities, setProductQuantities] = useState<Record<string, number>>({})
   const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null)
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [viewMode, setViewMode] = useState<"card" | "list">("card")
   const [categories, setCategories] = useState<Category[]>([])
 
@@ -66,12 +66,63 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
   }, [])
 
   useEffect(() => {
-    loadProducts()
-  }, [selectedCategory, onlyAvailable])
+    // Reset to page 1 when filters change (except pagination)
+    setCurrentPage(1)
+  }, [selectedCategory, onlyAvailable, debouncedSearchTerm])
+
+  const loadProducts = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError("")
+
+      const queryParams = new URLSearchParams()
+      queryParams.append("page", currentPage.toString())
+      queryParams.append("limit", "100")
+
+      if (selectedCategory !== "all") {
+        queryParams.append("grupo_id", selectedCategory)
+      }
+
+      if (onlyAvailable) {
+        queryParams.append("available", "true")
+      }
+
+      if (debouncedSearchTerm) {
+        queryParams.append("nome", debouncedSearchTerm)
+      }
+
+      console.log(`[v0] Fetching products with params: ${queryParams.toString()}`)
+      const response = await fetch(`/api/produtos?${queryParams.toString()}`)
+
+      const data = await response.json()
+
+      console.log("[v0] Products response:", {
+        products_count: data.data?.length,
+        total_products: data.total_produtos,
+        total_paginas: data.total_paginas,
+      })
+
+      if (data.data && Array.isArray(data.data)) {
+        setProducts(data.data)
+        setTotalPages(data.total_paginas || 1)
+        setTotalProducts(data.total_produtos || 0)
+      } else {
+        setProducts([])
+        setError("Nenhum produto encontrado")
+      }
+    } catch (err) {
+      console.error("Error loading products:", err)
+      setError("Erro ao carregar produtos. Tente novamente.")
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }, [currentPage, selectedCategory, onlyAvailable, debouncedSearchTerm])
 
   useEffect(() => {
-    filterProducts()
-  }, [products, searchTerm])
+    loadProducts()
+  }, [loadProducts])
+
 
   const loadCategories = async () => {
     try {
@@ -88,82 +139,21 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
     }
   }
 
-  const loadProducts = async () => {
-    try {
-      setLoading(true)
-      setError("")
-
-      let response
-      if (selectedCategory !== "all") {
-        console.log("[v0] Fetching ALL products with POST for category:", selectedCategory, "available:", onlyAvailable)
-        response = await fetch(`/api/produtos`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            grupo_id: selectedCategory,
-            available: onlyAvailable,
-          }),
-        })
-      } else {
-        console.log("[v0] Fetching ALL products with GET, available:", onlyAvailable)
-        response = await fetch(`/api/produtos?available=${onlyAvailable}`)
-      }
-
-      const data = await response.json()
-
-      console.log("[v0] Products response:", {
-        products_count: data.data?.length,
-        total_products: data.total_produtos,
-      })
-
-      if (data.data && Array.isArray(data.data)) {
-        setProducts(data.data)
-        setTotalPages(Math.ceil(data.data.length / 15) || 1)
-        setTotalProducts(data.data.length)
-      } else {
-        setProducts([])
-        setError("Nenhum produto encontrado")
-      }
-    } catch (err) {
-      console.error("Error loading products:", err)
-      setError("Erro ao carregar produtos. Tente novamente.")
-      setProducts([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const filterProducts = () => {
-    let filtered = products
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (product) =>
-          product.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.descricao?.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    setFilteredProducts(filtered)
-  }
-
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId)
-    setCurrentPage(1) // Reset to first page when changing category
+    // Page reset is handled by the useEffect above
   }
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1)
+      setCurrentPage(prev => prev - 1)
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1)
+      setCurrentPage(prev => prev + 1)
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
@@ -233,6 +223,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
     onAddToQuote(product, quantity)
     setProductQuantities((prev) => ({ ...prev, [product.id]: 0 }))
     setShowSuccessMessage(`${product.nome} adicionado ao orçamento!`)
+    setTimeout(() => setShowSuccessMessage(null), 3000)
   }
 
   const formatPrice = (product: Product) => {
@@ -254,29 +245,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
     return null
   }
 
-  const formatStock = (stock: number | string | undefined) => {
-    const numStock = typeof stock === "string" ? Number.parseFloat(stock) : stock
-    if (!numStock || isNaN(numStock) || numStock <= 0) {
-      return "Indisponível"
-    }
-    if (numStock > 100) {
-      return "Disponível"
-    }
-    return `${numStock} unidades`
-  }
-
-  const getStockColor = (stock: number | string | undefined) => {
-    const numStock = typeof stock === "string" ? Number.parseFloat(stock) : stock
-    if (!numStock || isNaN(numStock) || numStock <= 0) {
-      return "text-red-600"
-    }
-    if (numStock < 5) {
-      return "text-orange-600"
-    }
-    return "text-green-600"
-  }
-
-  if (loading) {
+  if (loading && products.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
@@ -290,7 +259,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
   return (
     <div className="space-y-4 sm:space-y-6">
       {showSuccessMessage && (
-        <Alert className="border-green-200 bg-green-50">
+        <Alert className="border-green-200 bg-green-50 fixed top-4 right-4 w-auto z-50 shadow-lg animate-in fade-in slide-in-from-top-2">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">{showSuccessMessage}</AlertDescription>
         </Alert>
@@ -343,7 +312,6 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
               checked={onlyAvailable}
               onCheckedChange={(checked) => {
                 setOnlyAvailable(checked)
-                setCurrentPage(1)
               }}
             />
             <Label htmlFor="available-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -373,10 +341,10 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Mostrando {Math.min((currentPage - 1) * 15 + 1, filteredProducts.length)}-{Math.min(currentPage * 15, filteredProducts.length)} de {filteredProducts.length} produtos
+            Mostrando {Math.min((currentPage - 1) * 100 + 1, totalProducts)}-{Math.min(currentPage * 100, totalProducts)} de {totalProducts} produtos
           </span>
           <span>
-            Página {currentPage} de {Math.ceil(filteredProducts.length / 15) || 1}
+            Página {currentPage} de {totalPages}
           </span>
         </div>
       </div>
@@ -387,9 +355,24 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
         </Alert>
       )}
 
-      {viewMode === "card" ? (
+      {loading && (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      )}
+
+      {!loading && products.length === 0 && (
+        <div className="text-center py-8 sm:py-12">
+          <div className="text-muted-foreground space-y-2">
+            <p className="text-base sm:text-lg">Nenhum produto encontrado</p>
+            <p className="text-sm">Tente ajustar os filtros ou termo de busca</p>
+          </div>
+        </div>
+      )}
+
+      {!loading && products.length > 0 && viewMode === "card" && (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-          {filteredProducts.slice((currentPage - 1) * 15, currentPage * 15).map((product) => {
+          {products.map((product) => {
             const quantity = productQuantities[product.id] || 1
             const availableStock = getAvailableStock(product)
             const isOutOfStock = availableStock <= 0
@@ -526,9 +509,11 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
             )
           })}
         </div>
-      ) : (
+      )}
+
+      {!loading && products.length > 0 && viewMode === "list" && (
         <div className="space-y-2">
-          {filteredProducts.slice((currentPage - 1) * 15, currentPage * 15).map((product) => {
+          {products.map((product) => {
             const quantity = productQuantities[product.id] || 1
             const availableStock = getAvailableStock(product)
             const isOutOfStock = availableStock <= 0
@@ -587,15 +572,6 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
               </Card>
             )
           })}
-        </div>
-      )}
-
-      {filteredProducts.length === 0 && !loading && (
-        <div className="text-center py-8 sm:py-12">
-          <div className="text-muted-foreground space-y-2">
-            <p className="text-base sm:text-lg">Nenhum produto encontrado</p>
-            <p className="text-sm">Tente ajustar os filtros ou termo de busca</p>
-          </div>
         </div>
       )}
 
