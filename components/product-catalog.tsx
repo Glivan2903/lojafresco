@@ -238,6 +238,51 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
     }).format(numPrice)
   }
 
+  const renderPagination = () => {
+    if (totalPages <= 1) return null
+
+    return (
+      <div className="flex items-center justify-center gap-2 py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePreviousPage}
+          disabled={currentPage === 1 || loading}
+          className="h-8 bg-transparent"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Anterior
+        </Button>
+
+        <div className="flex gap-1">
+          {getPageNumbers().map((page) => (
+            <Button
+              key={page}
+              variant={currentPage === page ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageClick(page)}
+              disabled={loading}
+              className="h-8 w-8 p-0"
+            >
+              {page}
+            </Button>
+          ))}
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleNextPage}
+          disabled={currentPage === totalPages || loading}
+          className="h-8 bg-transparent"
+        >
+          Próxima
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
+    )
+  }
+
   const getProductImage = (product: Product) => {
     if (product.fotos && Array.isArray(product.fotos) && product.fotos.length > 0) {
       return product.fotos[0]
@@ -348,6 +393,8 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
           </span>
         </div>
       </div>
+
+      {renderPagination()}
 
       {error && (
         <Alert>
@@ -575,46 +622,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePreviousPage}
-            disabled={currentPage === 1 || loading}
-            className="h-8 bg-transparent"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Anterior
-          </Button>
-
-          <div className="flex gap-1">
-            {getPageNumbers().map((page) => (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "outline"}
-                size="sm"
-                onClick={() => handlePageClick(page)}
-                disabled={loading}
-                className="h-8 w-8 p-0"
-              >
-                {page}
-              </Button>
-            ))}
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages || loading}
-            className="h-8 bg-transparent"
-          >
-            Próxima
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+      {renderPagination()}
     </div>
   )
 }
