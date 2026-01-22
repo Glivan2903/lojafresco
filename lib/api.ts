@@ -101,6 +101,13 @@ export interface PaymentMethod {
   ativo?: string
 }
 
+export interface Carrier {
+  id: string
+  nome: string
+  ativo?: string
+  // Add other fields if known, but id/nome is minimum
+}
+
 class BetelAPI {
   async request(endpoint: string, options: RequestInit = {}, retries = 3): Promise<any> {
     const url = `${API_BASE_URL}${endpoint}`
@@ -655,6 +662,105 @@ class BetelAPI {
     }
   }
 
+  async createSale(sale: {
+    customer: Customer
+    items: Array<{ product: Product; quantity: number; subtotal: number }>
+    observations?: string
+    paymentMethod?: string
+    deliveryDate?: string
+  }): Promise<any> {
+    try {
+      // Calculate total value
+      const totalValue = sale.items.reduce((acc, item) => acc + item.subtotal, 0).toFixed(2)
+
+      // 3. Resolve Situation ID
+      let situacaoId = "3150" // Default from example
+      let nomeSituacao = "Confirmado" // Default
+
+      try {
+        const salesSituations = await this.getSalesSituations()
+
+        if (salesSituations && salesSituations.length > 0) {
+          console.log("[v0] Sales Situations loaded:", JSON.stringify(salesSituations))
+
+          const firstSit = salesSituations[0]
+
+          if (firstSit.id) {
+            situacaoId = firstSit.id
+            nomeSituacao = firstSit.nome || nomeSituacao
+          } else if (firstSit.situacao_id) {
+            situacaoId = firstSit.situacao_id
+            nomeSituacao = firstSit.nome_situacao || nomeSituacao
+          } else if (firstSit.SituacoesVenda?.id) {
+            situacaoId = firstSit.SituacoesVenda.id
+            nomeSituacao = firstSit.SituacoesVenda.nome || nomeSituacao
+          }
+        } else {
+          console.warn("[v0] No Sales Situations found, using defaults.")
+        }
+      } catch (err) {
+        console.warn("[v0] Failed to fetch sales situations, using defaults:", err)
+      }
+
+      const paymentDate = new Date().toISOString().split("T")[0];
+
+      const saleData = {
+        tipo: "produto",
+        // codigo: Math.floor(Date.now() / 1000).toString(), // Removed as per example
+        cliente_id: sale.customer.id || "1",
+        vendedor_id: "45", // As per example
+        data: new Date().toISOString().split("T")[0],
+        prazo_entrega: sale.deliveryDate || new Date().toISOString().split("T")[0],
+        situacao_id: situacaoId, // "3150"
+        nome_situacao: nomeSituacao, // "Confirmado"
+        transportadora_id: "", // As per example
+        centro_custo_id: "1", // As per example
+        valor_frete: "0.00",
+        condicao_pagamento: "parcelado", // Changed to "parcelado" matches example (was "a_vista") OR should we infer? Example shows "parcelado".
+        pagamentos: [
+          {
+            pagamento: {
+              data_vencimento: paymentDate, // Example uses specific dates
+              valor: totalValue, // "25" in example
+              forma_pagamento_id: "640517", // Default from example
+              nome_forma_pagamento: "Dinheiro à Vista  ", // Default from example (note spaces)
+              plano_contas_id: "2514", // As per example
+              nome_plano_conta: "Prestações de serviçosAC", // As per example
+              observacao: sale.observations || `Pagamento via ${sale.paymentMethod || 'não informado'}` // "Lorem Ipsum..." in example
+            }
+          }
+          // Note: Example has 2 payments, we are doing existing logic of 1 payment for total for now
+        ],
+        produtos: sale.items.map((item) => ({
+          produto: {
+            produto_id: item.product.id || "22", // Fallback only if missing
+            variacao_id: "1246454", // Hardcoded in example, might need to be dynamic if available? Using example value or safe fallback
+            detalhes: item.product.descricao || item.product.nome || "Produto sem descrição",
+            quantidade: item.quantity.toString(),
+            valor_venda: Number(item.product.valor_venda || item.product.preco_venda || item.product.preco || 0).toFixed(2), // Ensure strict 2 decimals
+            tipo_desconto: "R$",
+            desconto_valor: "0.00",
+            desconto_porcentagem: "0.00"
+          },
+        })),
+        servicos: [] // Empty as per user request description (example had services, but user said "Produtos... os dados completos", usually implies current cart items. Example showed "servicos" array populated, but we don't have services in cart. Keeping structure.)
+      }
+
+      console.log("[v0] Sending sale data to Betel API (New Structure):", saleData)
+
+      // Use the new /api/vendas endpoint
+      const response = await this.request("/vendas", {
+        method: "POST",
+        body: JSON.stringify(saleData),
+      })
+
+      return response.data || response // Adjust based on actual API response wrapper
+    } catch (error) {
+      console.error("[v0] Error in createSale:", error)
+      throw error
+    }
+  }
+
   async createQuote(quote: {
     customer: Customer
     items: Array<{ product: Product; quantity: number; subtotal: number }>
@@ -720,6 +826,26 @@ class BetelAPI {
       return response.data || response || []
     } catch (error) {
       console.error("Failed to load customer quotes:", error)
+      return []
+    }
+  }
+
+  async getSalesSituations(): Promise<any[]> {
+    try {
+      const response = await this.request("/situacoes-vendas")
+      return response.data || []
+    } catch (error) {
+      console.error("Failed to load sales situations:", error)
+      return []
+    }
+  }
+
+  async getUsers(): Promise<any[]> {
+    try {
+      const response = await this.request("/usuarios")
+      return response.data || []
+    } catch (error) {
+      console.error("Failed to load users:", error)
       return []
     }
   }
@@ -792,6 +918,31 @@ class BetelAPI {
       return methods
     } catch (error) {
       console.error("Failed to load payment methods:", error)
+      return []
+    }
+  }
+
+  async getCarriers(): Promise<Carrier[]> {
+    try {
+      const response = await this.request("/transportadoras")
+      // Assuming similar structure to other endpoints, or direct array
+
+      let rawData = []
+      if (response && response.data) { // Standard Betel wrapper?
+        rawData = response.data
+      } else if (Array.isArray(response)) {
+        rawData = response
+      }
+
+      console.log(`[v0] API: Loaded ${rawData.length} carriers`)
+
+      // Map if necessary, assuming standard id/nome for now
+      return rawData.map((item: any) => ({
+        id: item.id || item.codigo || "",
+        nome: item.nome || item.nome_fantasia || "Sem Nome"
+      }))
+    } catch (error) {
+      console.error("Failed to load carriers:", error)
       return []
     }
   }

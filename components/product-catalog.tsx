@@ -439,7 +439,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
                 </CardHeader>
                 <CardContent className="p-2 flex flex-col h-full">
                   <div className="space-y-1 flex-grow">
-                    <CardTitle className="text-[10px] sm:text-xs leading-tight line-clamp-2 font-semibold min-h-[2rem] flex items-start">
+                    <CardTitle className="text-[10px] sm:text-xs leading-tight line-clamp-2 font-semibold min-h-[1.5rem] flex items-start -mt-1">
                       {product.nome}
                     </CardTitle>
                     {product.nome_grupo && (
@@ -567,13 +567,13 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
             return (
               <Card key={product.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <CardContent className="p-2 sm:p-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm sm:text-base leading-tight mb-1">{product.nome}</h3>
+                      <h3 className="font-semibold text-sm sm:text-base leading-none mb-0.5">{product.nome}</h3>
                       <div className="flex items-center gap-2">
                         {product.nome_grupo && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-[10px] px-1 py-0 h-5">
                             {product.nome_grupo.toLowerCase()}
                           </Badge>
                         )}

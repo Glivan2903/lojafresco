@@ -12,12 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Calendar, CreditCard, MapPin, User, ArrowLeft, Loader2 } from "lucide-react"
 import { formatPhone } from "@/lib/validations"
-import type { Customer, PaymentMethod } from "@/lib/api"
+import type { Customer, PaymentMethod, Carrier } from "@/lib/api"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Package, AlertTriangle } from "lucide-react"
+import { Search, Package, AlertTriangle, Bus, Bike } from "lucide-react"
 import { betelAPI } from "@/lib/api"
 
 interface OrderFormProps {
@@ -43,13 +43,16 @@ export interface OrderData {
     }
   }
   paymentMethod: string
-  deliveryMethod: "delivery" | "pickup" // Added deliveryMethod
+  deliveryMethod: "delivery" | "pickup" | "topiqueiro" | "motouber"
+  selectedCarrierId?: string
+  topiqueiroName?: string
+  topiqueiroTime?: string
+  topiqueiroPhone?: string
   deliveryDate?: string
   observations?: string
   exchangeDetails?: {
     originalOrderId: string
     selectedItems: Array<{ id: string; name: string }>
-    reason: string
     reason: string
     description?: string
   }
@@ -87,7 +90,11 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
       },
     },
     paymentMethod: "",
-    deliveryMethod: "delivery", // Default to delivery
+    deliveryMethod: "delivery",
+    selectedCarrierId: "",
+    topiqueiroName: "",
+    topiqueiroTime: "",
+    topiqueiroPhone: "",
     deliveryDate: "",
     observations: "",
   })
@@ -97,6 +104,11 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitProgress, setSubmitProgress] = useState(0)
   const [useRegisteredAddress, setUseRegisteredAddress] = useState(true)
+  const [carriers, setCarriers] = useState<Carrier[]>([])
+
+  useEffect(() => {
+    betelAPI.getCarriers().then(setCarriers).catch(console.error)
+  }, [])
 
   // Exchange State
   const [exchangeOrderId, setExchangeOrderId] = useState("")
@@ -275,6 +287,27 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
       }
     }
 
+    if (formData.deliveryMethod === "topiqueiro") {
+      if (!formData.selectedCarrierId) {
+        newErrors.selectedCarrierId = "Selecione um topiqueiro"
+      } else {
+        const isOthers = formData.selectedCarrierId === "others"
+        const isCarrierNotFound = carriers.find(c => c.id === formData.selectedCarrierId)?.nome.toLowerCase() === "não encontrado"
+
+        if (isOthers || isCarrierNotFound) {
+          if (!formData.topiqueiroName?.trim()) {
+            newErrors.topiqueiroName = "Nome do topiqueiro é obrigatório"
+          }
+          if (!formData.topiqueiroTime?.trim()) {
+            newErrors.topiqueiroTime = "Horário de saída é obrigatório"
+          }
+          if (!formData.topiqueiroPhone?.trim()) {
+            newErrors.topiqueiroPhone = "Telefone do topiqueiro é obrigatório"
+          }
+        }
+      }
+    }
+
     if (!formData.paymentMethod) {
       newErrors.paymentMethod = "Forma de pagamento é obrigatória"
       console.log("[v0] Validation failed: paymentMethod is empty")
@@ -336,6 +369,25 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
 
       // Inject exchange details if applicable
       const dataToSubmit = { ...formData }
+
+      // Auto-fill topiqueiro name if selected from dropdown
+      if (formData.deliveryMethod === "topiqueiro" && formData.selectedCarrierId && formData.selectedCarrierId !== "others") {
+        const selectedCarrier = carriers.find(c => c.id === formData.selectedCarrierId)
+        if (selectedCarrier) {
+          dataToSubmit.topiqueiroName = selectedCarrier.nome
+          // API might not give time/phone for registered carriers, so we leave them empty or as is?
+          // User requirement for "Not Found" was specific about Time/Phone.
+          // For found, it just presents the tab (list).
+          // So having name is checking the box.
+        }
+      }
+
+      // Clear address if not delivery to avoid validation issues on backend or irrelevant data
+      /* if (formData.deliveryMethod !== "delivery") {
+          // Keep address for customer record updates, but maybe flag it?
+          // User wants address even for Pickup? Typically no delivery address for pickup.
+          // But we will keep it for now as it updates customer profile.
+      } */
       if (formData.paymentMethod === "Troca" && exchangeOrder) {
         dataToSubmit.exchangeDetails = {
           originalOrderId: exchangeOrder.id || exchangeOrder.codigo || exchangeOrderId,
@@ -505,14 +557,14 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                   <Label>Como você deseja receber o pedido?</Label>
                   <RadioGroup
                     value={formData.deliveryMethod}
-                    onValueChange={(value: "delivery" | "pickup") => setFormData((prev) => ({ ...prev, deliveryMethod: value }))}
+                    onValueChange={(value: any) => setFormData((prev) => ({ ...prev, deliveryMethod: value }))}
                     className="grid grid-cols-2 gap-4"
                   >
                     <div>
                       <RadioGroupItem value="delivery" id="delivery" className="peer sr-only" />
                       <Label
                         htmlFor="delivery"
-                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-center h-full"
                       >
                         <MapPin className="mb-3 h-6 w-6" />
                         Entrega
@@ -522,14 +574,108 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                       <RadioGroupItem value="pickup" id="pickup" className="peer sr-only" />
                       <Label
                         htmlFor="pickup"
-                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-center h-full"
                       >
                         <User className="mb-3 h-6 w-6" />
                         Retirar na Loja
                       </Label>
                     </div>
+                    <div>
+                      <RadioGroupItem value="topiqueiro" id="topiqueiro" className="peer sr-only" />
+                      <Label
+                        htmlFor="topiqueiro"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-center h-full"
+                      >
+                        <Bus className="mb-3 h-6 w-6" />
+                        Tôpiqueiro
+                      </Label>
+                    </div>
+                    <div>
+                      <RadioGroupItem value="motouber" id="motouber" className="peer sr-only" />
+                      <Label
+                        htmlFor="motouber"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-center h-full"
+                      >
+                        <Bike className="mb-3 h-6 w-6" />
+                        Moto Uber
+                      </Label>
+                    </div>
                   </RadioGroup>
                 </div>
+
+                {formData.deliveryMethod === "topiqueiro" && (
+                  <div className="space-y-4 pt-4 border-t animate-in fade-in slide-in-from-top-4">
+                    <div className="space-y-2">
+                      <Label>Selecione o Topiqueiro</Label>
+                      <Select
+                        value={formData.selectedCarrierId}
+                        onValueChange={(value) => setFormData((prev) => ({ ...prev, selectedCarrierId: value }))}
+                      >
+                        <SelectTrigger className={errors.selectedCarrierId ? "border-destructive" : ""}>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {carriers.map((carrier) => (
+                            <SelectItem key={carrier.id} value={carrier.id}>
+                              {carrier.nome}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="others">Não Encontrado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.selectedCarrierId && (
+                        <p className="text-sm text-destructive">{errors.selectedCarrierId}</p>
+                      )}
+                    </div>
+
+                    {(formData.selectedCarrierId === "others" || carriers.find(c => c.id === formData.selectedCarrierId)?.nome.toLowerCase() === "não encontrado") && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-dashed">
+                        <div className="space-y-2">
+                          <Label htmlFor="topiqueiroName">Nome Cliente *</Label>
+                          <Input
+                            id="topiqueiroName"
+                            value={formData.topiqueiroName}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, topiqueiroName: e.target.value }))}
+                            className={errors.topiqueiroName ? "border-destructive" : ""}
+                          />
+                          {errors.topiqueiroName && (
+                            <p className="text-sm text-destructive">{errors.topiqueiroName}</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="topiqueiroTime">Horário de Saída *</Label>
+                          <Input
+                            id="topiqueiroTime"
+                            type="time"
+                            value={formData.topiqueiroTime}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, topiqueiroTime: e.target.value }))}
+                            className={errors.topiqueiroTime ? "border-destructive" : ""}
+                          />
+                          {errors.topiqueiroTime && (
+                            <p className="text-sm text-destructive">{errors.topiqueiroTime}</p>
+                          )}
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="topiqueiroPhone">Telefone *</Label>
+                          <Input
+                            id="topiqueiroPhone"
+                            value={formData.topiqueiroPhone}
+                            onChange={(e) => {
+                              const formatted = formatPhone(e.target.value)
+                              setFormData((prev) => ({ ...prev, topiqueiroPhone: formatted }))
+                            }}
+                            className={errors.topiqueiroPhone ? "border-destructive" : ""}
+                            placeholder="(00) 00000-0000"
+                            maxLength={15}
+                          />
+                          {errors.topiqueiroPhone && (
+                            <p className="text-sm text-destructive">{errors.topiqueiroPhone}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {formData.deliveryMethod === "delivery" && (
                   <div className="space-y-4 pt-4 border-t">
@@ -711,14 +857,24 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                         ))
                       ) : (
                         <>
-                          <SelectItem value="pix">PIX (Carregando...)</SelectItem>
-                          <SelectItem value="boleto">Boleto Bancário</SelectItem>
-                          <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
-                          <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
-                          <SelectItem value="transferencia">Transferência Bancária</SelectItem>
-                          <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                          <SelectItem value="Troca">Troca</SelectItem>
-                          <SelectItem value="Credito Peça Devolvida">Crédito Peça Devolvida</SelectItem>
+                          <>
+                            {(["delivery", "topiqueiro", "motouber"].includes(formData.deliveryMethod) ? (
+                              <>
+                                <SelectItem value="pix">PIX</SelectItem>
+                                <SelectItem value="a_receber">A Receber</SelectItem>
+                                <SelectItem value="a_prazo">A Prazo</SelectItem>
+                              </>
+                            ) : (
+                              // Pickup or default
+                              <>
+                                <SelectItem value="pix">PIX</SelectItem>
+                                <SelectItem value="dinheiro_vista">Dinheiro a Vista</SelectItem>
+                                <SelectItem value="a_prazo">A Prazo</SelectItem>
+                              </>
+                            ))}
+                            <SelectItem value="Troca">Troca</SelectItem>
+                            <SelectItem value="Credito Peça Devolvida">Crédito Peça Devolvida</SelectItem>
+                          </>
                         </>
                       )}
                     </SelectContent>

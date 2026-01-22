@@ -172,13 +172,30 @@ export default function HomePage() {
         },
         items: quoteItems,
         observations: `
+Forma Retirada: ${orderData.deliveryMethod === "delivery" ? "Entrega" :
+            orderData.deliveryMethod === "pickup" ? "Retirar na Loja" :
+              orderData.deliveryMethod === "topiqueiro" ? "Tôpiqueiro" :
+                orderData.deliveryMethod === "motouber" ? "Moto Uber" : orderData.deliveryMethod
+          }
+Pagamento: ${orderData.paymentMethod === "pix" ? "Pix" :
+            orderData.paymentMethod === "a_receber" ? "A Receber" :
+              orderData.paymentMethod === "a_prazo" ? "A Prazo" :
+                orderData.paymentMethod === "dinheiro_vista" ? "Dinheiro a Vista" : orderData.paymentMethod}
+Canal de venda: Loja Virtual
+${orderData.deliveryMethod === "topiqueiro" ? `
+Nome Topiqueiro: ${orderData.topiqueiroName}
+Horário Saída: ${orderData.topiqueiroTime || "Não especificado"}
+${orderData.topiqueiroPhone ? `Telefone: ${orderData.topiqueiroPhone}` : ""}
+` : ""}
+
+${orderData.deliveryMethod === "delivery" ? `
 DADOS DE ENTREGA:
 ${orderData.customerDetails.endereco.rua}, ${orderData.customerDetails.endereco.numero}
 ${orderData.customerDetails.endereco.complemento ? orderData.customerDetails.endereco.complemento + "\n" : ""}${orderData.customerDetails.endereco.bairro} - ${orderData.customerDetails.endereco.cidade}/${orderData.customerDetails.endereco.estado}
 CEP: ${orderData.customerDetails.endereco.cep}
+` : ""}
 
-FORMA DE PAGAMENTO: ${orderData.paymentMethod}
-${orderData.deliveryDate ? `DATA PREFERIDA: ${new Date(orderData.deliveryDate).toLocaleDateString("pt-BR")}` : ""}
+${orderData.observations ? `OBSERVAÇÕES ADICIONAIS:\n${orderData.observations}` : ""}
 
 ${orderData.exchangeDetails ? `
 DETALHES DA TROCA:
@@ -195,17 +212,15 @@ Estado: ${orderData.returnedItemDetails.condition}
 Data Compra: ${new Date(orderData.returnedItemDetails.purchaseDate).toLocaleDateString("pt-BR")}
 Valor: ${orderData.returnedItemDetails.value}
 ` : ""}
-
-${orderData.observations ? `OBSERVAÇÕES ADICIONAIS:\n${orderData.observations}` : ""}
         `.trim(),
         paymentMethod: orderData.paymentMethod,
         deliveryDate: orderData.deliveryDate,
       }
 
-      console.log("[v0] Enhanced quote data prepared:", enhancedQuoteData)
-      console.log("[v0] Calling betelAPI.createQuote")
+      console.log("[v0] Enhanced sale data prepared:", enhancedQuoteData)
+      console.log("[v0] Calling betelAPI.createSale")
 
-      const result = await betelAPI.createQuote(enhancedQuoteData)
+      const result = await betelAPI.createSale(enhancedQuoteData)
 
       console.log("[v0] Order submitted successfully:", result)
 
