@@ -604,6 +604,71 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
                         </Button>
                       </div>
 
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="hidden sm:flex items-center gap-1 text-xs sm:text-sm px-3 sm:px-4 h-7 sm:h-8"
+                          >
+                            <Info className="w-3 h-3 mr-1" />
+                            Detalhes
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="text-lg">{product.nome}</DialogTitle>
+                            <DialogDescription className="text-sm">Informações detalhadas do produto</DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            {getProductImage(product) && (
+                              <div className="aspect-video overflow-hidden rounded-lg bg-muted">
+                                <img
+                                  src={getProductImage(product) || "/placeholder.svg"}
+                                  alt={product.nome}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+
+                            <div className="space-y-3">
+                              <div>
+                                <h4 className="font-semibold text-sm">Descrição</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {product.descricao || "Sem descrição disponível"}
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-1 gap-4 text-sm">
+                                <div>
+                                  <h4 className="font-semibold">Preço</h4>
+                                  <p className="text-primary font-bold">{formatPrice(product)}</p>
+                                </div>
+                              </div>
+                              {product.codigo_interno && (
+                                <div>
+                                  <h4 className="font-semibold text-sm">Código</h4>
+                                  <p className="text-sm text-muted-foreground">{product.codigo_interno}</p>
+                                </div>
+                              )}
+                              {(product.peso || product.largura || product.altura || product.comprimento) && (
+                                <div>
+                                  <h4 className="font-semibold text-sm">Dimensões</h4>
+                                  <div className="text-sm text-muted-foreground space-y-1">
+                                    {product.peso && <p>Peso: {product.peso}kg</p>}
+                                    {(product.largura || product.altura || product.comprimento) && (
+                                      <p>
+                                        Dimensões: {product.largura || "0"}cm × {product.altura || "0"}cm ×{" "}
+                                        {product.comprimento || "0"}cm
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
                       <Button
                         onClick={() => handleAddToQuote(product)}
                         size="sm"

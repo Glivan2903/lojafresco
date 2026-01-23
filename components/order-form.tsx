@@ -197,7 +197,7 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
   useEffect(() => {
     if (formData.paymentMethod === "Troca" && customer.id) {
       setIsLoadingOrders(true)
-      betelAPI.getCustomerQuotes(customer.id)
+      betelAPI.getCustomerSales(customer.id)
         .then(orders => {
           setCustomerOrders(orders)
         })
@@ -219,7 +219,7 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
 
     try {
       console.log(`[v0] Loading order details for: ${orderId}`)
-      const order = await betelAPI.getOrderDetail(orderId)
+      const order = await betelAPI.getSaleDetail(orderId)
 
       if (order) {
         setExchangeOrder(order)
@@ -631,7 +631,7 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                     {(formData.selectedCarrierId === "others" || carriers.find(c => c.id === formData.selectedCarrierId)?.nome.toLowerCase() === "não encontrado") && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-dashed">
                         <div className="space-y-2">
-                          <Label htmlFor="topiqueiroName">Nome Cliente *</Label>
+                          <Label htmlFor="topiqueiroName">Nome do Topiqueiro *</Label>
                           <Input
                             id="topiqueiroName"
                             value={formData.topiqueiroName}

@@ -172,22 +172,10 @@ export default function HomePage() {
         },
         items: quoteItems,
         observations: `
-Forma Retirada: ${orderData.deliveryMethod === "delivery" ? "Entrega" :
-            orderData.deliveryMethod === "pickup" ? "Retirar na Loja" :
-              orderData.deliveryMethod === "topiqueiro" ? "Tôpiqueiro" :
-                orderData.deliveryMethod === "motouber" ? "Moto Uber" : orderData.deliveryMethod
-          }
 Pagamento: ${orderData.paymentMethod === "pix" ? "Pix" :
             orderData.paymentMethod === "a_receber" ? "A Receber" :
               orderData.paymentMethod === "a_prazo" ? "A Prazo" :
                 orderData.paymentMethod === "dinheiro_vista" ? "Dinheiro a Vista" : orderData.paymentMethod}
-Canal de venda: Loja Virtual
-${orderData.deliveryMethod === "topiqueiro" ? `
-Nome Topiqueiro: ${orderData.topiqueiroName}
-Horário Saída: ${orderData.topiqueiroTime || "Não especificado"}
-${orderData.topiqueiroPhone ? `Telefone: ${orderData.topiqueiroPhone}` : ""}
-` : ""}
-
 ${orderData.deliveryMethod === "delivery" ? `
 DADOS DE ENTREGA:
 ${orderData.customerDetails.endereco.rua}, ${orderData.customerDetails.endereco.numero}
@@ -215,6 +203,8 @@ Valor: ${orderData.returnedItemDetails.value}
         `.trim(),
         paymentMethod: orderData.paymentMethod,
         deliveryDate: orderData.deliveryDate,
+        deliveryMethod: orderData.deliveryMethod,
+        topiqueiroName: orderData.topiqueiroName,
       }
 
       console.log("[v0] Enhanced sale data prepared:", enhancedQuoteData)

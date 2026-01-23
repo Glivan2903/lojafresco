@@ -76,7 +76,7 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
     setError(null)
 
     try {
-      const response = await betelAPI.getCustomerQuotes(customer.id)
+      const response = await betelAPI.getCustomerSales(customer.id)
       setOrders(response || [])
     } catch (err) {
       console.error("Error fetching orders:", err)
@@ -91,7 +91,7 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
     setError(null)
 
     try {
-      const response = await betelAPI.getOrderDetail(orderId)
+      const response = await betelAPI.getSaleDetail(orderId)
       setSelectedOrder(response)
     } catch (err) {
       console.error("Error fetching order details:", err)

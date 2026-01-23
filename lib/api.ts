@@ -668,47 +668,70 @@ class BetelAPI {
     observations?: string
     paymentMethod?: string
     deliveryDate?: string
+    deliveryMethod?: string // Added
+    topiqueiroName?: string // Added
   }): Promise<any> {
     try {
       // Calculate total value
       const totalValue = sale.items.reduce((acc, item) => acc + item.subtotal, 0).toFixed(2)
 
       // 3. Resolve Situation ID
-      let situacaoId = "3150" // Default from example
-      let nomeSituacao = "Confirmado" // Default
-
-      try {
-        const salesSituations = await this.getSalesSituations()
-
-        if (salesSituations && salesSituations.length > 0) {
-          console.log("[v0] Sales Situations loaded:", JSON.stringify(salesSituations))
-
-          const firstSit = salesSituations[0]
-
-          if (firstSit.id) {
-            situacaoId = firstSit.id
-            nomeSituacao = firstSit.nome || nomeSituacao
-          } else if (firstSit.situacao_id) {
-            situacaoId = firstSit.situacao_id
-            nomeSituacao = firstSit.nome_situacao || nomeSituacao
-          } else if (firstSit.SituacoesVenda?.id) {
-            situacaoId = firstSit.SituacoesVenda.id
-            nomeSituacao = firstSit.SituacoesVenda.nome || nomeSituacao
-          }
-        } else {
-          console.warn("[v0] No Sales Situations found, using defaults.")
-        }
-      } catch (err) {
-        console.warn("[v0] Failed to fetch sales situations, using defaults:", err)
-      }
+      // Hardcoded as per user request: "Aguardando Impressão (Loja Virtual)"
+      const situacaoId = "8662646"
+      const nomeSituacao = "Aguardando Impressão (Loja Virtual)"
 
       const paymentDate = new Date().toISOString().split("T")[0];
+
+      // Map delivery method to readable string for API attribute
+      let formaRetirada = "Retirada Loja" // Default
+      if (sale.deliveryMethod === "delivery") formaRetirada = "Entrega"
+      else if (sale.deliveryMethod === "pickup") formaRetirada = "Retirar na Loja"
+      else if (sale.deliveryMethod === "topiqueiro") formaRetirada = "Topiqueiro"
+      else if (sale.deliveryMethod === "motouber") formaRetirada = "Moto Uber"
+
+      const atributos = [
+        {
+          atributo: {
+            id: "50082467", // ID specific for this attribute instance? Or generic? User example showed specific IDs.
+            // Wait, "id" in "atributo" object usually is the instance ID (unique per sale/attribute).
+            // But if we are creating, we might not need to send "id" or "atributo.id"?
+            // Usually on creation we send "atributo_id" and "conteudo".
+            // The example was a response object (GET), which has "id".
+            // For creation (POST), we usually send the definition ID ("atributo_id").
+            // I will send "atributo_id" and "conteudo". I will omit "id" or send "0"/empty if required.
+            // Let's look at the example again:
+            // "atributo": { "id": "50082467", "atributo_id": "82984", ... }
+            // "atributo_id" seems to be the definition.
+            atributo_id: "82984",
+            descricao: "Nome Topiqueiro",
+            conteudo: sale.topiqueiroName || "",
+            tipo: "texto_simples"
+          }
+        },
+        {
+          atributo: {
+            atributo_id: "82985",
+            descricao: "Forma Retirada",
+            conteudo: formaRetirada,
+            tipo: "check_list"
+          }
+        },
+        {
+          atributo: {
+            atributo_id: "83021",
+            descricao: "Prioridade Separação",
+            conteudo: "Normal",
+            tipo: "check_list"
+          }
+        }
+      ];
 
       const saleData = {
         tipo: "produto",
         // codigo: Math.floor(Date.now() / 1000).toString(), // Removed as per example
         cliente_id: sale.customer.id || "1",
         vendedor_id: "45", // As per example
+        nome_canal_venda: "Loja virtual ", // Added as per request
         data: new Date().toISOString().split("T")[0],
         prazo_entrega: sale.deliveryDate || new Date().toISOString().split("T")[0],
         situacao_id: situacaoId, // "3150"
@@ -731,6 +754,7 @@ class BetelAPI {
           }
           // Note: Example has 2 payments, we are doing existing logic of 1 payment for total for now
         ],
+        atributos: atributos, // Added attributes array
         produtos: sale.items.map((item) => ({
           produto: {
             produto_id: item.product.id || "22", // Fallback only if missing
@@ -820,12 +844,12 @@ class BetelAPI {
     }
   }
 
-  async getCustomerQuotes(customerId: string): Promise<any[]> {
+  async getCustomerSales(customerId: string): Promise<any[]> {
     try {
-      const response = await this.request(`/orcamentos?cliente_id=${customerId}`)
+      const response = await this.request(`/vendas?cliente_id=${customerId}`)
       return response.data || response || []
     } catch (error) {
-      console.error("Failed to load customer quotes:", error)
+      console.error("Failed to load customer sales:", error)
       return []
     }
   }
@@ -860,12 +884,13 @@ class BetelAPI {
     }
   }
 
-  async getOrderDetail(orderId: string): Promise<any> {
+  async getSaleDetail(orderId: string): Promise<any> {
     try {
-      const response = await this.request(`/orcamentos/${orderId}`)
+      // Using /vendas endpoint for details as well
+      const response = await this.request(`/vendas/${orderId}`)
       return response.data || response
     } catch (error) {
-      console.error("Failed to load order details:", error)
+      console.error("Failed to load sale details:", error)
       throw error
     }
   }

@@ -59,6 +59,11 @@ async function fetchProductsPage(
     const data = await response.json()
     let products = data.data || []
 
+    // Capture the original count before filtering.
+    // If the upstream API returns a full page (e.g. 100 items), it means there are likely more pages,
+    // regardless of how many items remain after our local availability filter.
+    const originalCount = products.length
+
     // 1. Filter by availability if requested
     // Note: This reduces the page size if items are filtered out,
     // but ensures we don't show out-of-stock items.
@@ -73,7 +78,7 @@ async function fetchProductsPage(
     // Fallback logic for total pages if upstream doesn't provide it
     // If we have products, assume there might be at least this many.
     // If we received a full page, assume there's more.
-    const estimatedTotal = totalRemote || (products.length === limit ? (page + 1) * limit : page * limit)
+    const estimatedTotal = totalRemote || (originalCount === limit ? (page + 1) * limit : page * limit)
 
     const totalPages = Math.ceil(estimatedTotal / limit)
 
