@@ -11,6 +11,7 @@ import Image from "next/image"
 import { validateCPF, validateCNPJ } from "@/lib/validations"
 import { betelAPI, type Customer } from "@/lib/api"
 import { AnimatedBackground } from "@/components/animated-background"
+import { toast } from "@/components/ui/use-toast"
 
 interface CustomerIdentificationProps {
   onCustomerIdentified: (customer: Customer) => void
@@ -210,8 +211,8 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            number: formData.telefone,
-            body: "MENSAGEM INFORMANDO QUE REALIZOU O CADASTRO NA LOJA E ESTÁ AGUARDANDO APROVAÇÃO"
+            number: `55${formData.telefone.replace(/\D/g, "")}`,
+            body: `Olá *${formData.nome}*!\nRecebemos seu cadastro com sucesso ✅\n\nNossa equipe já está analisando seus dados para aprovação.\n\nEm breve entraremos em contato com você pelo WhatsApp com o retorno.\n\nObrigado pela confiança!\n\n*Equipe Icore Tech*`
           }),
         })
       } catch (msgError) {
@@ -366,7 +367,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
 
             <div className="space-y-2">
               <Label htmlFor="nome" className="text-xs text-gray-500 ml-1">
-                {documentType === "cpf" ? "Nome Completo" : "Nome da Empresa"}
+                {documentType === "cpf" ? "Nome da Loja" : "Nome da Loja"}
               </Label>
               <Input
                 id="nome"

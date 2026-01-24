@@ -519,7 +519,7 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-muted-foreground">Nome Completo</Label>
+                    <Label className="text-muted-foreground">Nome da Loja</Label>
                     <p className="font-medium">{customer.nome}</p>
                   </div>
                   <div>

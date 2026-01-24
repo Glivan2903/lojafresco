@@ -4,6 +4,8 @@ import { NextResponse } from "next/server"
 export async function POST(request: Request) {
     try {
         const { number, body } = await request.json()
+        console.log("Send Message Request:", { number, body })
+        console.log("Send Message Request:", { number, body })
 
         if (!number || !body) {
             return NextResponse.json(
@@ -18,11 +20,13 @@ export async function POST(request: Request) {
             ? cleanNumber
             : `55${cleanNumber}`
 
-        const response = await fetch("https://api.setesystem.com.br/api/messages/send", {
+        // Bypass SSL check due to cert mismatch (ERR_TLS_CERT_ALTNAME_INVALID)
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+        const response = await fetch(process.env.WHATSAPP_API_URL!, {
             method: "POST",
             headers: {
-                "api-key": "ogGQGA05F2k8Ntt6if1NRBmZGm9i0xSfdn8tSHaL-H4",
-                "Connection-Token": "icoresystem", // Updated token from user request
+                "api-key": process.env.WHATSAPP_API_KEY!,
+                "Connection-Token": process.env.WHATSAPP_CONNECTION_TOKEN!,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -30,9 +34,10 @@ export async function POST(request: Request) {
                 body: body,
             }),
         })
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = "1"
 
         const data = await response.json()
-
+        console.log("External API Response:", data)
         if (!response.ok) {
             console.error("Error sending message:", data)
             return NextResponse.json(

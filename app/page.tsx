@@ -251,7 +251,7 @@ Obrigado pela preferência!
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            number: orderData.customerDetails.telefone || customer.telefone,
+            number: `55${(orderData.customerDetails.telefone || customer.telefone || "").replace(/\D/g, "")}`,
             body: message
           })
         })
