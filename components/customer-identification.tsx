@@ -286,52 +286,61 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
 
   if (showRegistration) {
     return (
-      <div className="min-h-screen bg-[#e5e5e5] flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl border-0 bg-[#D9D9D9]">
-          <CardHeader className="text-center space-y-4">
-            <div className="mx-auto flex flex-col items-center">
-              <Settings className="w-12 h-12 text-black mb-2" />
-              <h1 className="text-2xl font-bold text-black tracking-widest">SETE<br /><span className="text-xl">SYSTEM</span></h1>
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
+        <AnimatedBackground />
+
+        <Card className="w-full max-w-md shadow-2xl border-0 bg-[#E5E5E5] rounded-xl overflow-hidden">
+          <CardHeader className="text-center pb-2 pt-8">
+            <div className="mx-auto flex flex-col items-center mb-4">
+              {/* Logo area - reusing exact same logo structure as login */}
+              <div className="relative w-48 h-20 mb-2">
+                <Image
+                  src="/new-icore-logo.png"
+                  alt="Icore"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </div>
             <div>
               <CardTitle className="text-xl font-semibold text-gray-700">Completar Cadastro</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-8 pb-8">
             {/* Simplified registration fields for brevity in this view, strictly adhering to logic */}
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome Completo</Label>
+              <Label htmlFor="nome" className="text-xs text-gray-500 ml-1">Nome Completo</Label>
               <Input
                 id="nome"
                 value={formData.nome}
                 onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
-                className="bg-white border-0"
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reg-email">E-mail</Label>
-              <Input id="reg-email" value={formData.email} disabled className="bg-white/50 border-0" />
+              <Label htmlFor="reg-email" className="text-xs text-gray-500 ml-1">E-mail</Label>
+              <Input id="reg-email" value={formData.email} disabled className="bg-white/50 border-0 shadow-sm rounded-lg text-gray-800" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reg-doc">{documentType === "cpf" ? "CPF" : "CNPJ"}</Label>
-              <Input id="reg-doc" value={formData.documento} disabled className="bg-white/50 border-0" />
+              <Label htmlFor="reg-doc" className="text-xs text-gray-500 ml-1">{documentType === "cpf" ? "CPF" : "CNPJ"}</Label>
+              <Input id="reg-doc" value={formData.documento} disabled className="bg-white/50 border-0 shadow-sm rounded-lg text-gray-800" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="telefone">Telefone *</Label>
+              <Label htmlFor="telefone" className="text-xs text-gray-500 ml-1">Telefone *</Label>
               <Input
                 id="telefone"
                 placeholder="(11) 99999-9999"
                 value={formData.telefone}
                 onChange={(e) => setFormData((prev) => ({ ...prev, telefone: e.target.value }))}
-                className="bg-white border-0"
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
               />
             </div>
-            {/* Address fields collapsed or simplified? Keeping full form for functionality */}
             <div className="space-y-2">
-              <Label htmlFor="cep">CEP</Label>
+              <Label htmlFor="cep" className="text-xs text-gray-500 ml-1">CEP</Label>
               <Input
                 id="cep"
                 placeholder="00000-000"
@@ -360,15 +369,13 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
                   }
                 }}
                 maxLength={9}
-                className="bg-white border-0"
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
               />
             </div>
-            {/* Other address fields... For brevity, just mapping what's needed. */}
             <div className="grid grid-cols-2 gap-2">
-              <Input placeholder="Rua" value={formData.rua} onChange={e => setFormData(p => ({ ...p, rua: e.target.value }))} className="bg-white border-0" />
-              <Input placeholder="Número" value={formData.numero} onChange={e => setFormData(p => ({ ...p, numero: e.target.value }))} className="bg-white border-0" />
+              <Input placeholder="Rua" value={formData.rua} onChange={e => setFormData(p => ({ ...p, rua: e.target.value }))} className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300" />
+              <Input placeholder="Número" value={formData.numero} onChange={e => setFormData(p => ({ ...p, numero: e.target.value }))} className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300" />
             </div>
-
 
             {error && (
               <Alert variant="destructive">
@@ -380,7 +387,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               <Button variant="ghost" onClick={() => setShowRegistration(false)} className="flex-1 text-gray-600">
                 Voltar
               </Button>
-              <Button onClick={handleRegister} disabled={loading} className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold">
+              <Button onClick={handleRegister} disabled={loading} className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold shadow-sm">
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Cadastrar
               </Button>
@@ -401,7 +408,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
             {/* Logo area */}
             <div className="relative w-48 h-20 mb-2">
               <Image
-                src="/icore-logo.png"
+                src="/new-icore-logo.png"
                 alt="Icore"
                 fill
                 className="object-contain"
