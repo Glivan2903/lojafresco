@@ -29,6 +29,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
     bairro: "",
     cidade: "",
     estado: "",
+    data_nascimento: "",
   })
   const [isLoadingCep, setIsLoadingCep] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -80,13 +81,13 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
     // Just simple update. logic will strip non-digits on submit.
     setFormData((prev) => ({ ...prev, documento: value }))
 
-    // Auto-detect type based on length of digits
-    const clean = value.replace(/\D/g, "")
-    if (clean.length <= 11) {
-      setDocumentType("cpf")
-    } else {
-      setDocumentType("cnpj")
-    }
+    // Auto-detect type based on length of digits - DISABLED to respect explicit selection
+    // const clean = value.replace(/\D/g, "")
+    // if (clean.length <= 11) {
+    //   setDocumentType("cpf")
+    // } else {
+    //   setDocumentType("cnpj")
+    // }
   }
 
   const validateDocument = () => {
@@ -187,7 +188,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
         email: formData.email,
         telefone: formData.telefone,
         tipo_pessoa: documentType === "cpf" ? "F" : "J",
-        ...(documentType === "cpf" ? { cpf: cleanDocument } : { cnpj: cleanDocument }),
+        ...(documentType === "cpf" ? { cpf: cleanDocument, data_nascimento: formData.data_nascimento } : { cnpj: cleanDocument }),
         endereco: {
           cep: formData.cep,
           rua: formData.rua,
@@ -240,7 +241,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
             <Button
               onClick={() => {
                 setShowInactiveAccount(false)
-                setFormData({ nome: "", email: "", documento: "", telefone: "", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "" })
+                setFormData({ nome: "", email: "", documento: "", telefone: "", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", data_nascimento: "" })
               }}
               className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold"
             >
@@ -272,7 +273,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               onClick={() => {
                 setShowAccountPending(false)
                 setShowRegistration(false)
-                setFormData({ nome: "", email: "", documento: "", telefone: "", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "" })
+                setFormData({ nome: "", email: "", documento: "", telefone: "", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", data_nascimento: "" })
               }}
               className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold"
             >
@@ -309,8 +310,42 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
           </CardHeader>
           <CardContent className="space-y-4 px-8 pb-8">
             {/* Simplified registration fields for brevity in this view, strictly adhering to logic */}
+            {/* PF/PJ Selector */}
+            <div className="flex gap-4 mb-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="personType"
+                  value="cpf"
+                  checked={documentType === "cpf"}
+                  onChange={() => {
+                    setDocumentType("cpf")
+                    setFormData(prev => ({ ...prev, documento: "" })) // Clear document when switching type
+                  }}
+                  className="accent-yellow-500"
+                />
+                <span className="text-sm text-gray-700">Pessoa Física</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="personType"
+                  value="cnpj"
+                  checked={documentType === "cnpj"}
+                  onChange={() => {
+                    setDocumentType("cnpj")
+                    setFormData(prev => ({ ...prev, documento: "" })) // Clear document when switching type
+                  }}
+                  className="accent-yellow-500"
+                />
+                <span className="text-sm text-gray-700">Pessoa Jurídica</span>
+              </label>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="nome" className="text-xs text-gray-500 ml-1">Nome Completo</Label>
+              <Label htmlFor="nome" className="text-xs text-gray-500 ml-1">
+                {documentType === "cpf" ? "Nome Completo" : "Nome da Empresa"}
+              </Label>
               <Input
                 id="nome"
                 value={formData.nome}
@@ -318,6 +353,19 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
                 className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
               />
             </div>
+
+            {documentType === "cpf" && (
+              <div className="space-y-2">
+                <Label htmlFor="data_nascimento" className="text-xs text-gray-500 ml-1">Data de Nascimento</Label>
+                <Input
+                  id="data_nascimento"
+                  type="date"
+                  value={formData.data_nascimento}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, data_nascimento: e.target.value }))}
+                  className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="reg-email" className="text-xs text-gray-500 ml-1">E-mail</Label>

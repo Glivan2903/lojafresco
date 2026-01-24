@@ -9,6 +9,7 @@ export interface Customer {
   celular?: string // Added celular field
   email?: string
   tipo_pessoa: "F" | "J"
+  data_nascimento?: string // Added data_nascimento field
   ativo?: string // "1" for active, "0" for inactive
   endereco?: {
     rua?: string
