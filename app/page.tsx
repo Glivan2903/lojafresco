@@ -214,6 +214,51 @@ Valor: ${orderData.returnedItemDetails.value}
 
       console.log("[v0] Order submitted successfully:", result)
 
+      // Send WhatsApp Notification
+      try {
+        const formatMoney = (val: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val)
+
+        const itemsList = quoteItems.map(item =>
+          `${item.quantity}x ${item.product.nome} - ${formatMoney((item.product.valor_venda || item.product.preco_venda || item.product.preco || 0) * item.quantity)}`
+        ).join("\n")
+
+        const totalValue = formatMoney(quoteItems.reduce((acc, item) => acc + (getProductPrice(item.product) * item.quantity), 0))
+
+        const deliveryLabel = {
+          "delivery": "Entrega",
+          "pickup": "Retirada na Loja",
+          "topiqueiro": "Topiqueiro",
+          "motouber": "Moto Uber"
+        }[orderData.deliveryMethod] || orderData.deliveryMethod
+
+        const message = `Olá *${orderData.customerDetails.nome}*
+Recebemos o seu pedido ✅
+
+*Resumo do Pedido:*
+${itemsList}
+
+*Total:* ${totalValue}
+
+*Entrega:* ${deliveryLabel}
+${orderData.deliveryMethod === 'delivery' ? `Endereço: ${orderData.customerDetails.endereco.rua}, ${orderData.customerDetails.endereco.numero} - ${orderData.customerDetails.endereco.bairro}, ${orderData.customerDetails.endereco.cidade}/${orderData.customerDetails.endereco.estado}` : ''}
+
+*Pagamento:* ${orderData.paymentMethod}
+
+Obrigado pela preferência!
+*Equipe Icore Tech*`
+
+        await fetch("/api/send-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            number: orderData.customerDetails.telefone || customer.telefone,
+            body: message
+          })
+        })
+      } catch (msgError) {
+        console.error("Failed to send WhatsApp order notification", msgError)
+      }
+
       setAppState("order-submitted")
       setTimeout(() => {
         setQuoteItems([])
