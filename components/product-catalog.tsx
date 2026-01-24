@@ -32,6 +32,7 @@ import {
 } from "lucide-react"
 import { betelAPI, type Product, type Customer, type Category } from "@/lib/api"
 import { useDebounce } from "use-debounce"
+import { AddToCartModal } from "@/components/add-to-cart-modal"
 
 interface ProductCatalogProps {
   customer: Customer
@@ -56,6 +57,9 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
   const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"card" | "list">("list")
   const [categories, setCategories] = useState<Category[]>([])
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [lastAddedProduct, setLastAddedProduct] = useState("")
 
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -64,6 +68,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
   useEffect(() => {
     loadCategories()
   }, [])
+
 
   useEffect(() => {
     // Reset to page 1 when filters change (except pagination)
@@ -222,8 +227,8 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
     onAddToQuote(product, quantity)
     setProductQuantities((prev) => ({ ...prev, [product.id]: 0 }))
-    setShowSuccessMessage(`${product.nome} adicionado ao orçamento!`)
-    setTimeout(() => setShowSuccessMessage(null), 3000)
+    setLastAddedProduct(product.nome)
+    setIsModalOpen(true)
   }
 
   const formatPrice = (product: Product) => {
@@ -303,12 +308,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {showSuccessMessage && (
-        <Alert className="border-green-200 bg-green-50 fixed top-4 right-4 w-auto z-50 shadow-lg animate-in fade-in slide-in-from-top-2">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">{showSuccessMessage}</AlertDescription>
-        </Alert>
-      )}
+
 
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="relative">
@@ -688,6 +688,12 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
       )}
 
       {renderPagination()}
+
+      <AddToCartModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        productName={lastAddedProduct}
+      />
     </div>
   )
 }
