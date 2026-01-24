@@ -221,7 +221,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
 
       toast({
         title: "Cadastro realizado!",
-        description: "Seu cadastro foi realizado com sucesso.",
+        description: "Seu cadastro foi realizado com sucesso. Aguarde a análise.",
       })
 
       setShowAccountPending(true)
@@ -289,9 +289,17 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
             </div>
           </CardHeader>
           <CardContent className="space-y-6 text-center">
-            <p className="text-sm text-gray-600">
-              Obrigado <strong>{formData.nome}</strong>!
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                Obrigado pela preferência, <strong>{formData.nome}</strong>!
+              </p>
+              <p className="text-sm text-gray-600">
+                Seu cadastro foi recebido e nossa equipe está analisando seus dados.
+              </p>
+              <p className="text-sm text-gray-600 font-medium">
+                Você receberá mais informações pelo WhatsApp em breve.
+              </p>
+            </div>
             <Button
               onClick={() => {
                 setShowAccountPending(false)
