@@ -201,6 +201,28 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
       }
 
       const newCustomer = await betelAPI.createCustomer(customerData)
+
+      // Send WhatsApp notification
+      try {
+        await fetch("/api/send-message", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            number: formData.telefone,
+            body: "MENSAGEM INFORMANDO QUE REALIZOU O CADASTRO NA LOJA E ESTÁ AGUARDANDO APROVAÇÃO"
+          }),
+        })
+      } catch (msgError) {
+        console.error("Failed to send WhatsApp notification", msgError)
+      }
+
+      toast({
+        title: "Cadastro realizado!",
+        description: "Seu cadastro foi realizado com sucesso.",
+      })
+
       setShowAccountPending(true)
     } catch (err) {
       console.error("Customer registration error:", err)
