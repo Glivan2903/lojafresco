@@ -286,6 +286,7 @@ class BetelAPI {
         telefone: customer.telefone || "",
         celular: customer.telefone || "",
         email: customer.email || "",
+        data_nascimento: customer.data_nascimento || "",
         ativo: "0",
         contatos: customer.telefone
           ? [
