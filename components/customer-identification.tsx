@@ -425,6 +425,22 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               <Input placeholder="Número" value={formData.numero} onChange={e => setFormData(p => ({ ...p, numero: e.target.value }))} className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300" />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="bairro" className="text-xs text-gray-500 ml-1">Bairro</Label>
+              <Input id="bairro" placeholder="Bairro" value={formData.bairro} onChange={e => setFormData(p => ({ ...p, bairro: e.target.value }))} className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="cidade" className="text-xs text-gray-500 ml-1">Cidade</Label>
+                <Input id="cidade" placeholder="Cidade" value={formData.cidade} onChange={e => setFormData(p => ({ ...p, cidade: e.target.value }))} className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="estado" className="text-xs text-gray-500 ml-1">Estado</Label>
+                <Input id="estado" placeholder="Estado" value={formData.estado} onChange={e => setFormData(p => ({ ...p, estado: e.target.value }))} className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300" />
+              </div>
+            </div>
+
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
