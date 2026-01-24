@@ -54,7 +54,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
   const [onlyAvailable, setOnlyAvailable] = useState(false)
   const [productQuantities, setProductQuantities] = useState<Record<string, number>>({})
   const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<"card" | "list">("card")
+  const [viewMode, setViewMode] = useState<"card" | "list">("list")
   const [categories, setCategories] = useState<Category[]>([])
 
   const [currentPage, setCurrentPage] = useState(1)
@@ -559,7 +559,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
       )}
 
       {!loading && products.length > 0 && viewMode === "list" && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {products.map((product) => {
             const quantity = productQuantities[product.id] || 1
             const availableStock = getAvailableStock(product)
@@ -567,7 +567,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
 
             return (
               <Card key={product.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-2 sm:p-3">
+                <CardContent className="py-2 px-2 sm:py-2 sm:px-3">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-sm sm:text-base leading-none mb-0.5">{product.nome}</h3>

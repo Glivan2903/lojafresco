@@ -10,6 +10,7 @@ import { Loader2, Clock, CheckCircle, Mail, Key, Eye, EyeOff, Lock, Settings } f
 import Image from "next/image"
 import { validateCPF, validateCNPJ } from "@/lib/validations"
 import { betelAPI, type Customer } from "@/lib/api"
+import { AnimatedBackground } from "@/components/animated-background"
 
 interface CustomerIdentificationProps {
   onCustomerIdentified: (customer: Customer) => void
@@ -224,9 +225,6 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
     return (
       <div className="min-h-screen bg-[#e5e5e5] flex items-center justify-center p-4">
         <Card className="w-full max-w-[400px] shadow-lg border-0 bg-[#D9D9D9]">
-          {/* Reusing existing inactive account UI but slightly matched to theme? 
-               Actually user only asked for Login page layout. Keeping others simple or matching. 
-               Let's keep them functionally same but basic style consistency. */}
           <CardHeader className="text-center space-y-4">
             <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
               <Clock className="w-8 h-8 text-orange-600" />
@@ -394,16 +392,8 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
   }
 
   return (
-    <div className="min-h-screen bg-[#757575] flex items-center justify-center p-4">
-      {/* Background color approximation from image (darker gray/olive background?) actually looks like a dark overlay. 
-          User image has a yellow accent top left? 
-          The Request said "altere o layout da pagina de login deixe nesse padrão". 
-          The image has a grey card on a dark/olive background. 
-          Let's use a solid dark gray/olive for background `bg-[#4B5563]` or similar. 
-          Wait, image background looks like olive green/yellowish. 
-          I'll stick to a neutral dark gray for safety, or generic background.
-      */}
-      <div className="absolute inset-0 bg-[#5c5c4f] z-[-1]" /> {/* Olive-ish background */}
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <AnimatedBackground />
 
       <Card className="w-full max-w-[400px] shadow-2xl border-0 bg-[#E5E5E5] rounded-xl overflow-hidden">
         <CardHeader className="text-center pb-2 pt-8">
