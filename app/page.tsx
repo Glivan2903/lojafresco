@@ -99,6 +99,10 @@ export default function HomePage() {
     setPaymentMethods([])
   }
 
+  const handleLogoClick = () => {
+    setAppState("products")
+  }
+
   const handleViewQuote = () => {
     setAppState("quote")
   }
@@ -334,6 +338,7 @@ Obrigado pela preferência!
         quoteItemsCount={quoteItems.length}
         onViewQuote={handleViewQuote}
         onLogout={handleLogout}
+        onLogoClick={handleLogoClick}
       />
       <main>
         {appState === "quote" && (

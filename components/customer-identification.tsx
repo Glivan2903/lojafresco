@@ -561,7 +561,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
         <CardHeader className="text-center pb-2 pt-8">
           <div className="mx-auto flex flex-col items-center mb-4">
             {/* Logo area */}
-            <div className="relative w-48 h-20 mb-2">
+            <div className="relative w-64 h-28 mb-4">
               <Image
                 src="/logo-icore-tech.png"
                 alt="Icore"

@@ -210,7 +210,7 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
                           <p>
                             <strong>Status:</strong>
                             <Badge
-                              className={`ml-2 hover:bg-opacity-80 ${getStatusColor(selectedOrder.nome_situacao || selectedOrder.situacao).badge
+                              className={`ml-2 hover:bg-opacity-80 h-auto whitespace-normal text-center ${getStatusColor(selectedOrder.nome_situacao || selectedOrder.situacao).badge
                                 }`}
                             >
                               {selectedOrder.nome_situacao || selectedOrder.situacao || "Status não informado"}
@@ -323,7 +323,7 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
                     <Card key={order.id} className="border-l-4 border-l-accent">
                       <CardContent className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                          <div className="space-y-2">
+                          <div className="space-y-2 mb-2 md:mb-0">
                             <div className="flex items-center gap-2">
                               <Package className="w-4 h-4 text-muted-foreground" />
                               <span className="font-medium">
@@ -331,7 +331,7 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
                               </span>
                             </div>
                             <Badge
-                              className={`hover:bg-opacity-80 ${getStatusColor(order.nome_situacao || order.situacao).badge
+                              className={`hover:bg-opacity-80 h-auto whitespace-normal text-center ${getStatusColor(order.nome_situacao || order.situacao).badge
                                 }`}
                             >
                               {order.nome_situacao || order.situacao || "Status não informado"}

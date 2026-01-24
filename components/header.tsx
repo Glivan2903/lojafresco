@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart, User, LogOut, FileText } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import type { Customer } from "@/lib/api"
 import { CustomerOrders } from "./customer-orders"
 
@@ -13,9 +14,10 @@ interface HeaderProps {
   quoteItemsCount: number
   onViewQuote: () => void
   onLogout: () => void
+  onLogoClick: () => void
 }
 
-export function Header({ customer, quoteItemsCount, onViewQuote, onLogout }: HeaderProps) {
+export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLogoClick }: HeaderProps) {
   const [showOrders, setShowOrders] = useState(false)
 
   return (
@@ -24,7 +26,9 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout }: Hea
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Image src="/logo-icore-tech.png" alt="icore" width={120} height={32} className="h-8 w-auto" />
+              <Link href="/" onClick={onLogoClick}>
+                <Image src="/logo-icore-tech.png" alt="icore" width={180} height={50} className="h-14 w-auto" />
+              </Link>
             </div>
           </div>
 
