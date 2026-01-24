@@ -24,7 +24,7 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout }: Hea
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Image src="/new-icore-logo.png" alt="icore" width={120} height={32} className="h-8 w-auto" />
+              <Image src="/logo-icore-tech.png" alt="icore" width={120} height={32} className="h-8 w-auto" />
             </div>
           </div>
 

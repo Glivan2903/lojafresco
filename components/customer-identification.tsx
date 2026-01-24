@@ -295,7 +295,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               {/* Logo area - reusing exact same logo structure as login */}
               <div className="relative w-48 h-20 mb-2">
                 <Image
-                  src="/new-icore-logo.png"
+                  src="/logo-icore-tech.png"
                   alt="Icore"
                   fill
                   className="object-contain"
@@ -408,7 +408,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
             {/* Logo area */}
             <div className="relative w-48 h-20 mb-2">
               <Image
-                src="/new-icore-logo.png"
+                src="/logo-icore-tech.png"
                 alt="Icore"
                 fill
                 className="object-contain"
