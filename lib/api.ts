@@ -741,6 +741,7 @@ class BetelAPI {
         transportadora_id: "", // As per example
         centro_custo_id: "1", // As per example
         valor_frete: "0.00",
+        observacoes: sale.observations || "", // Added payload field for observations
         condicao_pagamento: "parcelado", // Changed to "parcelado" matches example (was "a_vista") OR should we infer? Example shows "parcelado".
         pagamentos: [
           {
@@ -751,7 +752,7 @@ class BetelAPI {
               nome_forma_pagamento: "Dinheiro à Vista  ", // Default from example (note spaces)
               plano_contas_id: "2514", // As per example
               nome_plano_conta: "Prestações de serviçosAC", // As per example
-              observacao: sale.observations || `Pagamento via ${sale.paymentMethod || 'não informado'}` // "Lorem Ipsum..." in example
+              observacao: `Pagamento via ${sale.paymentMethod || 'não informado'}` // Payment specific observation
             }
           }
           // Note: Example has 2 payments, we are doing existing logic of 1 payment for total for now
