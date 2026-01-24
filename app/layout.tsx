@@ -12,7 +12,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Icore - Lojinha Virtual",
+  title: "Icore Tech - Loja Virtual",
   description: "Sistema de orçamentos e pedidos da Icore",
   generator: "v0.app",
 }

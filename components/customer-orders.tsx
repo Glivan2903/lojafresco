@@ -118,14 +118,42 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
     }
   }
 
-  const getStatusColor = (status: string | undefined) => {
-    if (!status) return "secondary"
+  const getStatusColor = (status: string | undefined): { badge: string; text: string } => {
+    if (!status) return { badge: "bg-gray-100 text-gray-800", text: "text-gray-600" }
 
-    const statusLower = status.toLowerCase()
-    if (statusLower.includes("aprovado") || statusLower.includes("confirmado")) return "default"
-    if (statusLower.includes("pendente") || statusLower.includes("aguardando")) return "secondary"
-    if (statusLower.includes("cancelado") || statusLower.includes("rejeitado")) return "destructive"
-    return "secondary"
+    const s = status.toLowerCase().trim()
+
+    // Cinza
+    if (s === "editando") return { badge: "bg-gray-100 text-gray-800", text: "text-gray-600" }
+
+    // Vermelho
+    if (s === "estornado" || s.includes("cancelado") || s.includes("rejeitado"))
+      return { badge: "bg-red-100 text-red-800", text: "text-red-600" }
+
+    // Púrpura
+    if (s === "ficou na loja" || s.includes("embalado"))
+      return { badge: "bg-purple-100 text-purple-800", text: "text-purple-600" }
+
+    // Marrom
+    if (s === "testando" || s === "saiu para entrega")
+      return { badge: "bg-orange-100 text-orange-900", text: "text-orange-900" } // Using Orange-900/Amber for visual Brown
+
+    // Azul
+    if (s.includes("aguardando impressão")) return { badge: "bg-blue-100 text-blue-800", text: "text-blue-600" }
+
+    // Laranja
+    if (s === "aguardando pagamento" || s.includes("separando peças"))
+      return { badge: "bg-orange-100 text-orange-800", text: "text-orange-600" }
+
+    // Verde
+    if (s === "pagamento concluido" || s === "pedido entregue" || s.includes("aprovado") || s.includes("confirmado"))
+      return { badge: "bg-green-100 text-green-800", text: "text-green-600" }
+
+    // Preto
+    if (s.includes("impresso")) return { badge: "bg-gray-900 text-white", text: "text-black" }
+
+    // Default
+    return { badge: "bg-gray-100 text-gray-800", text: "text-gray-600" }
   }
 
   const getProductCount = (order: Order) => {
@@ -182,8 +210,8 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
                           <p>
                             <strong>Status:</strong>
                             <Badge
-                              variant={getStatusColor(selectedOrder.nome_situacao || selectedOrder.situacao)}
-                              className="ml-2"
+                              className={`ml-2 hover:bg-opacity-80 ${getStatusColor(selectedOrder.nome_situacao || selectedOrder.situacao).badge
+                                }`}
                             >
                               {selectedOrder.nome_situacao || selectedOrder.situacao || "Status não informado"}
                             </Badge>
@@ -302,7 +330,10 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
                                 {order.codigo || order.numero || `Pedido #${order.id}`}
                               </span>
                             </div>
-                            <Badge variant={getStatusColor(order.nome_situacao || order.situacao)}>
+                            <Badge
+                              className={`hover:bg-opacity-80 ${getStatusColor(order.nome_situacao || order.situacao).badge
+                                }`}
+                            >
                               {order.nome_situacao || order.situacao || "Status não informado"}
                             </Badge>
                           </div>
@@ -318,7 +349,10 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <DollarSign className="w-4 h-4 text-muted-foreground" />
-                              <span className="font-medium text-accent">
+                              <span
+                                className={`font-medium ${getStatusColor(order.nome_situacao || order.situacao).text
+                                  }`}
+                              >
                                 {formatCurrency(order.total || order.valor_total)}
                               </span>
                             </div>

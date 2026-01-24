@@ -18,7 +18,6 @@ import {
   ArrowLeft,
   AlertTriangle,
   ShoppingBag,
-  Printer,
 } from "lucide-react"
 import type { Customer, Product } from "@/lib/api"
 
@@ -146,20 +145,7 @@ export function QuoteManagement({
     window.open(whatsappUrl, "_blank")
   }
 
-  const printQuote = () => {
-    const total = calculateTotal()
 
-    const printData = {
-      customer,
-      items: quoteItems,
-      observations,
-      total,
-    }
-
-    sessionStorage.setItem("printQuoteData", JSON.stringify(printData))
-
-    router.push("/print-quote")
-  }
 
   const getAvailableStock = (product: Product) => {
     const stock = product.estoque || product.estoque_atual || 0
@@ -378,10 +364,7 @@ export function QuoteManagement({
                 Enviar Pedido a Loja
               </Button>
 
-              <Button onClick={printQuote} variant="outline" className="w-full bg-transparent">
-                <Printer className="w-4 h-4 mr-2" />
-                Imprimir Orçamento
-              </Button>
+
 
               <Button variant="outline" onClick={shareViaWhatsApp} className="w-full bg-transparent">
                 <FileText className="w-4 h-4 mr-2" />

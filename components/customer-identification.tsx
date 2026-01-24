@@ -150,6 +150,21 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
       }
 
       // If email not found, offer registration
+      setFormData({
+        ...formData,
+        email: "",
+        documento: "",
+        nome: "",
+        telefone: "",
+        cep: "",
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        cidade: "",
+        estado: "",
+        data_nascimento: "",
+      })
       setShowRegistration(true)
     } catch (err) {
       console.error("Customer lookup error:", err)
@@ -161,6 +176,21 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
       ) {
         setError("Não foi possível conectar com o servidor. Continuando com cadastro local.")
         setTimeout(() => {
+          setFormData({
+            ...formData,
+            email: "",
+            documento: "",
+            nome: "",
+            telefone: "",
+            cep: "",
+            rua: "",
+            numero: "",
+            complemento: "",
+            bairro: "",
+            cidade: "",
+            estado: "",
+            data_nascimento: "",
+          })
           setShowRegistration(true)
           setError("")
         }, 2000)
@@ -175,8 +205,28 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
   const handleRegister = async () => {
     setError("")
 
-    if (!formData.telefone.trim()) {
-      setError("Telefone é obrigatório para cadastro")
+    const requiredFields = [
+      { key: "nome", label: "Nome da Loja" },
+      { key: "email", label: "E-mail" },
+      { key: "documento", label: "CPF/CNPJ" },
+      { key: "telefone", label: "Telefone" },
+      { key: "cep", label: "CEP" },
+      { key: "rua", label: "Rua" },
+      { key: "numero", label: "Número" },
+      { key: "bairro", label: "Bairro" },
+      { key: "cidade", label: "Cidade" },
+      { key: "estado", label: "Estado" },
+    ] as const
+
+    for (const field of requiredFields) {
+      if (!formData[field.key as keyof typeof formData].trim()) {
+        setError(`${field.label} é obrigatório`)
+        return
+      }
+    }
+
+    if (!validateDocument()) {
+      setError("Documento inválido")
       return
     }
 
@@ -400,12 +450,22 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
 
             <div className="space-y-2">
               <Label htmlFor="reg-email" className="text-xs text-gray-500 ml-1">E-mail</Label>
-              <Input id="reg-email" value={formData.email} disabled className="bg-white/50 border-0 shadow-sm rounded-lg text-gray-800" />
+              <Input
+                id="reg-email"
+                value={formData.email}
+                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="reg-doc" className="text-xs text-gray-500 ml-1">{documentType === "cpf" ? "CPF" : "CNPJ"}</Label>
-              <Input id="reg-doc" value={formData.documento} disabled className="bg-white/50 border-0 shadow-sm rounded-lg text-gray-800" />
+              <Input
+                id="reg-doc"
+                value={formData.documento}
+                onChange={(e) => setFormData((prev) => ({ ...prev, documento: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
             </div>
 
             <div className="space-y-2">
@@ -588,7 +648,23 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
             <div className="text-center text-sm text-gray-500 mt-4">
               Não tem uma conta?{" "}
               <button
-                onClick={() => setShowRegistration(true)}
+                onClick={() => {
+                  setFormData({
+                    email: "",
+                    documento: "",
+                    nome: "",
+                    telefone: "",
+                    cep: "",
+                    rua: "",
+                    numero: "",
+                    complemento: "",
+                    bairro: "",
+                    cidade: "",
+                    estado: "",
+                    data_nascimento: "",
+                  })
+                  setShowRegistration(true)
+                }}
                 className="text-primary hover:underline font-medium"
               >
                 Cadastre-se

@@ -19,6 +19,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Search, Package, AlertTriangle, Bus, Bike } from "lucide-react"
 import { betelAPI } from "@/lib/api"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface OrderFormProps {
   customer: Customer
@@ -103,8 +112,11 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
   const [isLoadingCep, setIsLoadingCep] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitProgress, setSubmitProgress] = useState(0)
-  const [useRegisteredAddress, setUseRegisteredAddress] = useState(true)
+  const [useRegisteredAddress, setUseRegisteredAddress] = useState(() => {
+    return !!(customer.endereco && (customer.endereco.rua || customer.endereco.cep))
+  })
   const [carriers, setCarriers] = useState<Carrier[]>([])
+  const [showMotoUberModal, setShowMotoUberModal] = useState(false)
 
   useEffect(() => {
     betelAPI.getCarriers().then(setCarriers).catch(console.error)
@@ -335,6 +347,10 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
       if (!returnedItemValue.trim()) newErrors.returnedItemValue = "Valor é obrigatório"
     }
 
+    if (!formData.deliveryDate) {
+      newErrors.deliveryDate = "Data de entrega é obrigatória"
+    }
+
     console.log("[v0] Validation errors found:", newErrors)
     console.log("[v0] Validation result:", Object.keys(newErrors).length === 0)
 
@@ -557,7 +573,12 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                   <Label>Como você deseja receber o pedido?</Label>
                   <RadioGroup
                     value={formData.deliveryMethod}
-                    onValueChange={(value: any) => setFormData((prev) => ({ ...prev, deliveryMethod: value }))}
+                    onValueChange={(value: any) => {
+                      setFormData((prev) => ({ ...prev, deliveryMethod: value }))
+                      if (value === "motouber") {
+                        setShowMotoUberModal(true)
+                      }
+                    }}
                     className="grid grid-cols-2 gap-4"
                   >
                     <div>
@@ -681,35 +702,37 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                   <div className="space-y-4 pt-4 border-t">
                     <div className="flex items-center justify-between">
                       <Label className="text-base font-semibold">Endereço de Entrega</Label>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="use-registered-address"
-                          checked={useRegisteredAddress}
-                          onCheckedChange={(checked) => {
-                            setUseRegisteredAddress(checked)
-                            if (checked && customer.endereco) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                customerDetails: {
-                                  ...prev.customerDetails,
-                                  endereco: {
-                                    rua: customer.endereco?.rua || "",
-                                    numero: customer.endereco?.numero || "",
-                                    complemento: customer.endereco?.complemento || "",
-                                    bairro: customer.endereco?.bairro || "",
-                                    cidade: customer.endereco?.cidade || "",
-                                    cep: customer.endereco?.cep || "",
-                                    estado: customer.endereco?.estado || "",
+                      {(customer.endereco && (customer.endereco.rua || customer.endereco.cep)) && (
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="use-registered-address"
+                            checked={useRegisteredAddress}
+                            onCheckedChange={(checked) => {
+                              setUseRegisteredAddress(checked)
+                              if (checked && customer.endereco) {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  customerDetails: {
+                                    ...prev.customerDetails,
+                                    endereco: {
+                                      rua: customer.endereco?.rua || "",
+                                      numero: customer.endereco?.numero || "",
+                                      complemento: customer.endereco?.complemento || "",
+                                      bairro: customer.endereco?.bairro || "",
+                                      cidade: customer.endereco?.cidade || "",
+                                      cep: customer.endereco?.cep || "",
+                                      estado: customer.endereco?.estado || "",
+                                    },
                                   },
-                                },
-                              }))
-                            }
-                          }}
-                        />
-                        <Label htmlFor="use-registered-address" className="text-sm font-normal">
-                          Usar endereço cadastrado
-                        </Label>
-                      </div>
+                                }))
+                              }
+                            }}
+                          />
+                          <Label htmlFor="use-registered-address" className="text-sm font-normal">
+                            Usar endereço cadastrado
+                          </Label>
+                        </div>
+                      )}
                     </div>
 
                     {useRegisteredAddress ? (
@@ -849,34 +872,21 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                       <SelectValue placeholder="Selecione a forma de pagamento" />
                     </SelectTrigger>
                     <SelectContent>
-                      {paymentMethods.length > 0 ? (
-                        paymentMethods.map((method) => (
-                          <SelectItem key={method.id} value={method.nome}>
-                            {method.nome}
-                          </SelectItem>
-                        ))
+                      {["delivery", "topiqueiro"].includes(formData.deliveryMethod) ? (
+                        <>
+                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="a_receber">A Receber</SelectItem>
+                          <SelectItem value="a_prazo">A Prazo</SelectItem>
+                        </>
                       ) : (
                         <>
-                          <>
-                            {(["delivery", "topiqueiro", "motouber"].includes(formData.deliveryMethod) ? (
-                              <>
-                                <SelectItem value="pix">PIX</SelectItem>
-                                <SelectItem value="a_receber">A Receber</SelectItem>
-                                <SelectItem value="a_prazo">A Prazo</SelectItem>
-                              </>
-                            ) : (
-                              // Pickup or default
-                              <>
-                                <SelectItem value="pix">PIX</SelectItem>
-                                <SelectItem value="dinheiro_vista">Dinheiro a Vista</SelectItem>
-                                <SelectItem value="a_prazo">A Prazo</SelectItem>
-                              </>
-                            ))}
-                            <SelectItem value="Troca">Troca</SelectItem>
-                            <SelectItem value="Credito Peça Devolvida">Crédito Peça Devolvida</SelectItem>
-                          </>
+                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="dinheiro_vista">Dinheiro a Vista</SelectItem>
+                          <SelectItem value="a_prazo">A Prazo</SelectItem>
                         </>
                       )}
+                      <SelectItem value="Troca">Troca</SelectItem>
+                      <SelectItem value="Credito Peça Devolvida">Crédito Peça Devolvida</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.paymentMethod && <p className="text-sm text-destructive">{errors.paymentMethod}</p>}
@@ -1043,14 +1053,16 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="deliveryDate">Data de Entrega Preferida</Label>
+                  <Label htmlFor="deliveryDate">Data de Entrega Preferida *</Label>
                   <Input
                     id="deliveryDate"
                     type="date"
                     value={formData.deliveryDate}
                     onChange={(e) => setFormData((prev) => ({ ...prev, deliveryDate: e.target.value }))}
                     min={new Date().toISOString().split("T")[0]}
+                    className={errors.deliveryDate ? "border-destructive" : ""}
                   />
+                  {errors.deliveryDate && <p className="text-sm text-destructive">{errors.deliveryDate}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -1113,6 +1125,22 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
           </div>
         </form>
       </div>
+
+      <AlertDialog open={showMotoUberModal} onOpenChange={setShowMotoUberModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Atenção</AlertDialogTitle>
+            <AlertDialogDescription>
+              Solicitamos que as informações da corrida sejam enviadas por meio do nosso canal do WhatsApp.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowMotoUberModal(false)}>
+              Entendi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
