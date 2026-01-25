@@ -748,7 +748,7 @@ class BetelAPI {
         vendedor_id: "45", // As per example
         nome_canal_venda: "Loja virtual ", // Added as per request
         data: new Date().toISOString().split("T")[0],
-        prazo_entrega: sale.deliveryDate || new Date().toISOString().split("T")[0],
+        prazo_entrega: "",
         situacao_id: situacaoId, // "3150"
         nome_situacao: nomeSituacao, // "Confirmado"
         transportadora_id: "", // As per example
@@ -759,13 +759,13 @@ class BetelAPI {
         pagamentos: [
           {
             pagamento: {
-              data_vencimento: paymentDate, // Example uses specific dates
+              data_vencimento: "",
               valor: totalValue, // "25" in example
               forma_pagamento_id: "640517", // Default from example
               nome_forma_pagamento: "Dinheiro à Vista  ", // Default from example (note spaces)
               plano_contas_id: "2514", // As per example
               nome_plano_conta: "Prestações de serviçosAC", // As per example
-              observacao: `Pagamento via ${sale.paymentMethod || 'não informado'}` // Payment specific observation
+              observacao: "" // Payment specific observation
             }
           }
           // Note: Example has 2 payments, we are doing existing logic of 1 payment for total for now
