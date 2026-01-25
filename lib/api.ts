@@ -741,12 +741,61 @@ class BetelAPI {
         }
       ];
 
+      // Fetch available payment methods to get correct ID and Name
+      let paymentMethodId = "640517" // Default fallback (Dinheiro)
+      let paymentMethodName = "Dinheiro à Vista"
+
+      if (sale.paymentMethod) {
+        try {
+          const availablePaymentMethods = await this.getPaymentMethods()
+          const methodKey = sale.paymentMethod.toLowerCase()
+
+          let selectedMethod = availablePaymentMethods.find(pm =>
+            pm.nome.toLowerCase() === methodKey
+          )
+
+          // Fallback mappings
+          if (!selectedMethod) {
+            if (methodKey === 'pix') {
+              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('pix'))
+            } else if (methodKey === 'dinheiro_vista') {
+              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('dinheiro'))
+            } else if (methodKey === 'a_prazo') {
+              selectedMethod = availablePaymentMethods.find(pm =>
+                pm.nome.toLowerCase().includes('prazo') ||
+                pm.nome.toLowerCase().includes('crediário') ||
+                pm.nome.toLowerCase().includes('credito loja')
+              )
+            } else if (methodKey === 'a_receber') {
+              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('receber'))
+            } else if (methodKey === 'cartao_credito') {
+              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('crédito') || pm.nome.toLowerCase().includes('credito'))
+            } else if (methodKey === 'cartao_debito') {
+              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('débito') || pm.nome.toLowerCase().includes('debito'))
+            }
+          }
+
+          if (selectedMethod) {
+            paymentMethodId = selectedMethod.id
+            paymentMethodName = selectedMethod.nome
+            console.log(`[v0] Mapped payment method '${sale.paymentMethod}' to ID: ${paymentMethodId}, Name: ${paymentMethodName}`)
+          } else {
+            console.warn(`[v0] Could not map payment method '${sale.paymentMethod}' to API method. Using default.`)
+            // If it's a custom string (like "Troca"), use it as name but keep default ID or use specific logic? 
+            // Ideally we shouldn't send an invalid ID. But for now, let's update name at least.
+            paymentMethodName = sale.paymentMethod
+          }
+        } catch (e) {
+          console.error("[v0] Error fetching payment methods for mapping:", e)
+        }
+      }
+
       const saleData = {
         tipo: "produto",
         // codigo: Math.floor(Date.now() / 1000).toString(), // Removed as per example
         cliente_id: sale.customer.id || "1",
         vendedor_id: "45", // As per example
-        nome_canal_venda: "Loja virtual ", // Added as per request
+        nome_canal_venda: "Loja Virtual", // Added as per request
         data: new Date().toISOString().split("T")[0],
         prazo_entrega: "",
         situacao_id: situacaoId, // "3150"
@@ -755,14 +804,14 @@ class BetelAPI {
         centro_custo_id: "1", // As per example
         valor_frete: "0.00",
         observacoes: sale.observations || "", // Added payload field for observations
-        condicao_pagamento: "parcelado", // Changed to "parcelado" matches example (was "a_vista") OR should we infer? Example shows "parcelado".
+        condicao_pagamento: "Á vista",
         pagamentos: [
           {
             pagamento: {
               data_vencimento: "",
               valor: totalValue, // "25" in example
-              forma_pagamento_id: "640517", // Default from example
-              nome_forma_pagamento: "Dinheiro à Vista  ", // Default from example (note spaces)
+              forma_pagamento_id: paymentMethodId,
+              nome_forma_pagamento: paymentMethodName,
               plano_contas_id: "2514", // As per example
               nome_plano_conta: "Prestações de serviçosAC", // As per example
               observacao: "" // Payment specific observation
