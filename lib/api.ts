@@ -109,6 +109,19 @@ export interface Carrier {
   // Add other fields if known, but id/nome is minimum
 }
 
+export interface Receivable {
+  id: string
+  data_vencimento: string
+  valor: string
+  valor_total: string
+  descricao: string
+  codigo: string
+  nome_forma_pagamento: string
+  situacao_id?: string
+  parcela?: string // Not seen in example but keeping just in case
+  observacao?: string // Not seen but keeping
+}
+
 class BetelAPI {
   async request(endpoint: string, options: RequestInit = {}, retries = 3): Promise<any> {
     const url = `${API_BASE_URL}${endpoint}`
@@ -762,7 +775,7 @@ class BetelAPI {
           produto: {
             produto_id: item.product.id || "22", // Fallback only if missing
             variacao_id: "1246454", // Hardcoded in example, might need to be dynamic if available? Using example value or safe fallback
-            detalhes: item.product.descricao || item.product.nome || "Produto sem descrição",
+            detalhes: "",
             quantidade: item.quantity.toString(),
             valor_venda: Number(item.product.valor_venda || item.product.preco_venda || item.product.preco || 0).toFixed(2), // Ensure strict 2 decimals
             tipo_desconto: "R$",
@@ -971,6 +984,25 @@ class BetelAPI {
       }))
     } catch (error) {
       console.error("Failed to load carriers:", error)
+      return []
+    }
+  }
+
+  async getCustomerReceivables(customerId: string): Promise<Receivable[]> {
+    try {
+      const response = await this.request(`/recebimentos?cliente_id=${customerId}&liquidado=ab`, {
+        method: "GET"
+      })
+
+      if (response && Array.isArray(response)) {
+        return response
+      } else if (response && response.data && Array.isArray(response.data)) {
+        return response.data
+      }
+
+      return []
+    } catch (error) {
+      console.error("Failed to fetch receivables:", error)
       return []
     }
   }

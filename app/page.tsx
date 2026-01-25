@@ -180,11 +180,11 @@ Pagamento: ${orderData.paymentMethod === "pix" ? "Pix" :
             orderData.paymentMethod === "a_receber" ? "A Receber" :
               orderData.paymentMethod === "a_prazo" ? "A Prazo" :
                 orderData.paymentMethod === "dinheiro_vista" ? "Dinheiro a Vista" : orderData.paymentMethod}
-${orderData.deliveryMethod === "delivery" ? `
-DADOS DE ENTREGA:
-${orderData.customerDetails.endereco.rua}, ${orderData.customerDetails.endereco.numero}
-${orderData.customerDetails.endereco.complemento ? orderData.customerDetails.endereco.complemento + "\n" : ""}${orderData.customerDetails.endereco.bairro} - ${orderData.customerDetails.endereco.cidade}/${orderData.customerDetails.endereco.estado}
-CEP: ${orderData.customerDetails.endereco.cep}
+${orderData.deliveryMethod === "topiqueiro" ? `
+DADOS DE ENTREGA (TOPIQUEIRO):
+Nome: ${orderData.topiqueiroName}
+Horário: ${orderData.topiqueiroTime || "Não informado"}
+Telefone: ${orderData.topiqueiroPhone || "Não informado"}
 ` : ""}
 
 ${orderData.observations ? `OBSERVAÇÕES ADICIONAIS:\n${orderData.observations}` : ""}

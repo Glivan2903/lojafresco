@@ -8,6 +8,8 @@ import Image from "next/image"
 import Link from "next/link"
 import type { Customer } from "@/lib/api"
 import { CustomerOrders } from "./customer-orders"
+import { CustomerFinancial } from "./customer-financial"
+import { DollarSign } from "lucide-react"
 
 interface HeaderProps {
   customer: Customer
@@ -19,6 +21,7 @@ interface HeaderProps {
 
 export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLogoClick }: HeaderProps) {
   const [showOrders, setShowOrders] = useState(false)
+  const [showFinancial, setShowFinancial] = useState(false)
 
   return (
     <>
@@ -43,6 +46,11 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLog
               <span className="hidden sm:inline">Consultar Pedidos</span>
             </Button>
 
+            <Button variant="outline" onClick={() => setShowFinancial(true)} className="bg-transparent text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50">
+              <DollarSign className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Débitos</span>
+            </Button>
+
             <Button variant="outline" onClick={onViewQuote} className="relative bg-transparent">
               <ShoppingCart className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Orçamento</span>
@@ -65,6 +73,7 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLog
       </header>
 
       <CustomerOrders customer={customer} isOpen={showOrders} onClose={() => setShowOrders(false)} />
+      <CustomerFinancial customer={customer} isOpen={showFinancial} onClose={() => setShowFinancial(false)} />
     </>
   )
 }
