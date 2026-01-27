@@ -757,17 +757,43 @@ class BetelAPI {
           // Fallback mappings
           if (!selectedMethod) {
             if (methodKey === 'pix') {
-              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('pix'))
+              // Prioritize "Pix" exact match if available
+              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === 'pix')
+              if (!selectedMethod) {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('pix'))
+              }
             } else if (methodKey === 'dinheiro_vista') {
-              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('dinheiro'))
+              // Priority 1: Exact match "Dinheiro à Vista" or "Dinheiro a Vista"
+              selectedMethod = availablePaymentMethods.find(pm =>
+                pm.nome.toLowerCase() === 'dinheiro à vista' ||
+                pm.nome.toLowerCase() === 'dinheiro a vista'
+              )
+
+              // Priority 2: Starts with "Dinheiro" (Avoids "Dia Anterior (Dinheiro)")
+              if (!selectedMethod) {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().startsWith('dinheiro'))
+              }
+
+              // Priority 3: Fuzzy match (Last resort)
+              if (!selectedMethod) {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('dinheiro'))
+              }
             } else if (methodKey === 'a_prazo') {
               selectedMethod = availablePaymentMethods.find(pm =>
-                pm.nome.toLowerCase().includes('prazo') ||
-                pm.nome.toLowerCase().includes('crediário') ||
-                pm.nome.toLowerCase().includes('credito loja')
+                pm.nome.toLowerCase() === 'a prazo'
               )
+              if (!selectedMethod) {
+                selectedMethod = availablePaymentMethods.find(pm =>
+                  pm.nome.toLowerCase().includes('prazo') ||
+                  pm.nome.toLowerCase().includes('crediário') ||
+                  pm.nome.toLowerCase().includes('credito loja')
+                )
+              }
             } else if (methodKey === 'a_receber') {
-              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('receber'))
+              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === 'a receber')
+              if (!selectedMethod) {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('receber'))
+              }
             } else if (methodKey === 'cartao_credito') {
               selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('crédito') || pm.nome.toLowerCase().includes('credito'))
             } else if (methodKey === 'cartao_debito') {

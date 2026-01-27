@@ -176,10 +176,6 @@ export default function HomePage() {
         },
         items: quoteItems,
         observations: `
-Pagamento: ${orderData.paymentMethod === "pix" ? "Pix" :
-            orderData.paymentMethod === "a_receber" ? "A Receber" :
-              orderData.paymentMethod === "a_prazo" ? "A Prazo" :
-                orderData.paymentMethod === "dinheiro_vista" ? "Dinheiro a Vista" : orderData.paymentMethod}
 ${orderData.deliveryMethod === "topiqueiro" ? `
 DADOS DE ENTREGA (TOPIQUEIRO):
 Nome: ${orderData.topiqueiroName}
@@ -229,7 +225,7 @@ Valor: ${orderData.returnedItemDetails.value}
         const totalValue = formatMoney(quoteItems.reduce((acc, item) => acc + (getProductPrice(item.product) * item.quantity), 0))
 
         const deliveryLabel = {
-          "delivery": "Entrega",
+          "delivery": "Entregar",
           "pickup": "Retirada na Loja",
           "topiqueiro": "Topiqueiro",
           "motouber": "Moto Uber"
@@ -243,7 +239,7 @@ ${itemsList}
 
 *Total:* ${totalValue}
 
-*Entrega:* ${deliveryLabel}
+*Entregar:* ${deliveryLabel}
 ${orderData.deliveryMethod === 'delivery' ? `Endereço: ${orderData.customerDetails.endereco.rua}, ${orderData.customerDetails.endereco.numero} - ${orderData.customerDetails.endereco.bairro}, ${orderData.customerDetails.endereco.cidade}/${orderData.customerDetails.endereco.estado}` : ''}
 
 *Pagamento:* ${orderData.paymentMethod}
