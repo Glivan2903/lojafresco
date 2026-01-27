@@ -685,6 +685,8 @@ class BetelAPI {
     deliveryDate?: string
     deliveryMethod?: string // Added
     topiqueiroName?: string // Added
+    topiqueiroTime?: string // Added
+    topiqueiroPhone?: string // Added
   }): Promise<any> {
     try {
       // Calculate total value
@@ -740,6 +742,30 @@ class BetelAPI {
           }
         }
       ];
+
+      // Add "Horário Saida" attribute if time is provided
+      if (sale.topiqueiroTime) {
+        atributos.push({
+          atributo: {
+            atributo_id: "86847",
+            descricao: "Horário Saida",
+            conteudo: sale.topiqueiroTime,
+            tipo: "texto_simples"
+          }
+        })
+      }
+
+      // Add "Telefone Topiqueiro" attribute if phone is provided
+      if (sale.topiqueiroPhone) {
+        atributos.push({
+          atributo: {
+            atributo_id: "86851",
+            descricao: "Telefone Topiqueiro",
+            conteudo: sale.topiqueiroPhone.replace(/\D/g, ""), // Remove formatting for safer storage/usage? User example showed "79999999999" (clean)
+            tipo: "texto_simples"
+          }
+        })
+      }
 
       // Fetch available payment methods to get correct ID and Name
       let paymentMethodId = "640517" // Default fallback (Dinheiro)

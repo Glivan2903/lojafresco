@@ -205,6 +205,8 @@ Valor: ${orderData.returnedItemDetails.value}
         deliveryDate: orderData.deliveryDate,
         deliveryMethod: orderData.deliveryMethod,
         topiqueiroName: orderData.topiqueiroName,
+        topiqueiroTime: orderData.topiqueiroTime,
+        topiqueiroPhone: orderData.topiqueiroPhone,
       }
 
       console.log("[v0] Enhanced sale data prepared:", enhancedQuoteData)
