@@ -834,7 +834,7 @@ class BetelAPI {
         pagamentos: [
           {
             pagamento: {
-              data_vencimento: "",
+              data_vencimento: new Date().toISOString().split("T")[0],
               valor: totalValue, // "25" in example
               forma_pagamento_id: paymentMethodId,
               nome_forma_pagamento: paymentMethodName,
