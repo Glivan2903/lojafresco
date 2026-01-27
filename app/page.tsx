@@ -179,9 +179,9 @@ export default function HomePage() {
 ${orderData.deliveryMethod === "topiqueiro" ? `
 DADOS DE ENTREGA (TOPIQUEIRO):
 Nome: ${orderData.topiqueiroName}
-Horário: ${orderData.topiqueiroTime || "Não informado"}
-Telefone: ${orderData.topiqueiroPhone || "Não informado"}
-` : ""}
+${orderData.topiqueiroTime ? `Horário de Saída: ${orderData.topiqueiroTime}` : ""}
+${orderData.topiqueiroPhone ? `Telefone: ${orderData.topiqueiroPhone}` : ""}
+`.replace(/^\s*[\r\n]/gm, "") : ""}
 
 ${orderData.observations ? `OBSERVAÇÕES ADICIONAIS:\n${orderData.observations}` : ""}
 

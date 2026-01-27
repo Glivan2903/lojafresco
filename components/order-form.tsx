@@ -389,10 +389,9 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
         const selectedCarrier = carriers.find(c => c.id === formData.selectedCarrierId)
         if (selectedCarrier) {
           dataToSubmit.topiqueiroName = selectedCarrier.nome
-          // API might not give time/phone for registered carriers, so we leave them empty or as is?
-          // User requirement for "Not Found" was specific about Time/Phone.
-          // For found, it just presents the tab (list).
-          // So having name is checking the box.
+          // Clear time and phone for standard carriers as they are not manually entered
+          dataToSubmit.topiqueiroTime = ""
+          dataToSubmit.topiqueiroPhone = ""
         }
       }
 
