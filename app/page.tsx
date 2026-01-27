@@ -7,7 +7,7 @@ import { QuoteManagement } from "@/components/quote-management"
 import { OrderForm, type OrderData } from "@/components/order-form"
 import { Header } from "@/components/header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle, Check, Copy } from "lucide-react"
 import { betelAPI, type Customer, type Product, type PaymentMethod } from "@/lib/api"
 
 import {
@@ -37,6 +37,15 @@ export default function HomePage() {
 
   const [showPixModal, setShowPixModal] = useState(false)
   const [pixData, setPixData] = useState<{ nome: string; chave: string; valor: string } | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyPixKey = () => {
+    if (pixData?.chave) {
+      navigator.clipboard.writeText(pixData.chave)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   useEffect(() => {
     if (customer) {
@@ -313,6 +322,8 @@ Obrigado pela preferência!
     }, 0)
   }
 
+
+
   if (!customer) {
     return <CustomerIdentification onCustomerIdentified={handleCustomerIdentified} />
   }
@@ -412,50 +423,61 @@ Obrigado pela preferência!
 
       {/* PIX Payment Modal */}
       <AlertDialog open={showPixModal} onOpenChange={setShowPixModal}>
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="bg-background border rounded-lg shadow-lg p-6 max-w-md w-full m-4">
-            <div className="space-y-4">
-              <div className="space-y-2 text-center">
-                <h2 className="text-xl font-bold">Pagamento via PIX</h2>
-                <p className="text-muted-foreground">Utilize os dados abaixo para realizar o pagamento.</p>
-              </div>
+        <AlertDialogContent className="max-w-md">
+          <div className="space-y-4">
+            <div className="space-y-2 text-center">
+              <h2 className="text-xl font-bold text-primary flex items-center justify-center gap-2">
+                <CheckCircle className="w-6 h-6" />
+                Pedido concluído!
+              </h2>
+              <p className="text-muted-foreground">Utilize os dados abaixo para realizar o pagamento via PIX.</p>
+            </div>
 
-              {pixData && (
-                <div className="space-y-4 p-4 bg-muted rounded-md">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <span className="font-semibold">Valor Total:</span>
-                    <span className="text-lg font-bold text-primary">{pixData.valor}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-sm font-semibold block">Nome do Recebedor:</span>
-                    <span className="break-words">{pixData.nome}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-sm font-semibold block">Chave PIX:</span>
-                    <div className="p-2 bg-background rounded border break-all font-mono text-sm">
+            {pixData && (
+              <div className="space-y-4 p-4 bg-muted rounded-md border">
+                <div className="flex justify-between items-center border-b pb-2 border-border/50">
+                  <span className="font-semibold">Valor Total:</span>
+                  <span className="text-lg font-bold text-primary">{pixData.valor}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-sm font-semibold block">Nome do Recebedor:</span>
+                  <span className="break-words font-medium">{pixData.nome}</span>
+                </div>
+                <div className="space-y-2">
+                  <span className="text-sm font-semibold block">Chave PIX:</span>
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-background rounded border break-all font-mono text-sm flex-1 text-muted-foreground">
                       {pixData.chave}
                     </div>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={handleCopyPixKey}
+                      className="h-10 w-10 shrink-0"
+                      title="Copiar Chave PIX"
+                    >
+                      {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <span className="text-xs font-bold">Copiar</span>}
+                    </Button>
                   </div>
                 </div>
-              )}
-
-              <div className="flex justify-end pt-2">
-                <Button onClick={() => {
-                  setShowPixModal(false)
-                  setAppState("order-submitted")
-                  setTimeout(() => {
-                    setQuoteItems([])
-                    setAppState("products")
-                  }, 4000)
-                }}>
-                  Já realizei o pagamento
-                </Button>
               </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <Button onClick={() => {
+                setShowPixModal(false)
+                setAppState("order-submitted")
+                setTimeout(() => {
+                }, 300)
+              }} className="w-full">
+                Já realizei o pagamento
+              </Button>
             </div>
           </div>
-        </div>
+        </AlertDialogContent>
       </AlertDialog>
 
     </div>
   )
 }
+
