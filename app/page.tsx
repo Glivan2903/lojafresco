@@ -450,13 +450,11 @@ Obrigado pela preferência!
                       {pixData.chave}
                     </div>
                     <Button
-                      size="icon"
-                      variant="outline"
                       onClick={handleCopyPixKey}
-                      className="h-10 w-10 shrink-0"
+                      className="h-10 px-8 shrink-0 bg-yellow-400 hover:bg-yellow-500 text-black border-none font-bold"
                       title="Copiar Chave PIX"
                     >
-                      {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <span className="text-xs font-bold">Copiar</span>}
+                      {copied ? <CheckCircle className="w-5 h-5" /> : <span className="text-sm">Copiar</span>}
                     </Button>
                   </div>
                 </div>
