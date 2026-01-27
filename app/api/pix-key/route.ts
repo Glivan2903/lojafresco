@@ -25,6 +25,7 @@ export async function GET() {
                 const contato = clientData.contatos[0].contato
                 return NextResponse.json({
                     nome: contato.nome,
+                    tipo: contato.cargo,
                     chave: contato.observacao
                 })
             }

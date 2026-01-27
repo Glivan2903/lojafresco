@@ -1064,7 +1064,7 @@ class BetelAPI {
     }
   }
 
-  async getPixKey(): Promise<{ nome: string; chave: string } | null> {
+  async getPixKey(): Promise<{ nome: string; chave: string; tipo?: string } | null> {
     try {
       const response = await fetch("/api/pix-key")
 

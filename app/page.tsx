@@ -36,7 +36,7 @@ export default function HomePage() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
 
   const [showPixModal, setShowPixModal] = useState(false)
-  const [pixData, setPixData] = useState<{ nome: string; chave: string; valor: string } | null>(null)
+  const [pixData, setPixData] = useState<{ nome: string; chave: string; valor: string; tipo?: string } | null>(null)
   const [copied, setCopied] = useState(false)
 
   const handleCopyPixKey = () => {
@@ -293,6 +293,7 @@ Obrigado pela preferência!
             setPixData({
               nome: pixInfo.nome,
               chave: pixInfo.chave,
+              tipo: pixInfo.tipo,
               valor: new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(total)
             })
             setShowPixModal(true)
@@ -443,6 +444,12 @@ Obrigado pela preferência!
                   <span className="text-sm font-semibold block">Nome do Recebedor:</span>
                   <span className="break-words font-medium">{pixData.nome}</span>
                 </div>
+                {pixData.tipo && (
+                  <div className="space-y-1">
+                    <span className="text-sm font-semibold block">Tipo da Chave:</span>
+                    <span className="break-words font-medium">{pixData.tipo}</span>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <span className="text-sm font-semibold block">Chave PIX:</span>
                   <div className="flex items-center gap-2">
