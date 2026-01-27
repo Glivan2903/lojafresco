@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Calendar, CreditCard, MapPin, User, ArrowLeft, Loader2 } from "lucide-react"
 import { formatPhone } from "@/lib/validations"
 import type { Customer, PaymentMethod, Carrier } from "@/lib/api"
+import { isStoreOpen, getNextBusinessDay } from "@/lib/utils" // Imported helpers
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -70,6 +71,7 @@ export interface OrderData {
     condition: string
     purchaseDate: string
     value: string
+    returnedItemValue: string
   }
 }
 
@@ -84,6 +86,7 @@ interface ViaCEPResponse {
 }
 
 export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }: OrderFormProps) {
+  // Initialize date to today's date
   const [formData, setFormData] = useState<OrderData>({
     customerDetails: {
       nome: customer.nome,
@@ -104,7 +107,7 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
     topiqueiroName: "",
     topiqueiroTime: "",
     topiqueiroPhone: "",
-    deliveryDate: "",
+    deliveryDate: new Date().toISOString().split("T")[0], // Default to today
     observations: "",
   })
 
@@ -115,9 +118,18 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
 
   const [carriers, setCarriers] = useState<Carrier[]>([])
   const [showMotoUberModal, setShowMotoUberModal] = useState(false)
+  const [showStoreClosedModal, setShowStoreClosedModal] = useState(false) // New state
 
   useEffect(() => {
     betelAPI.getCarriers().then(setCarriers).catch(console.error)
+
+    // Check store hours
+    const now = new Date()
+    if (!isStoreOpen(now)) {
+      setShowStoreClosedModal(true)
+      const nextBusinessDay = getNextBusinessDay(now)
+      setFormData(prev => ({ ...prev, deliveryDate: nextBusinessDay.toISOString().split("T")[0] }))
+    }
   }, [])
 
   // Exchange State
@@ -1093,6 +1105,20 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
             <AlertDialogAction onClick={() => setShowMotoUberModal(false)}>
               Entendi
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showStoreClosedModal} onOpenChange={setShowStoreClosedModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Loja Fechada</AlertDialogTitle>
+            <AlertDialogDescription>
+              No momento nossa loja encontra-se fechada. Seu pedido será agendado para o próximo dia útil: {formData.deliveryDate ? new Date(formData.deliveryDate + "T12:00:00").toLocaleDateString('pt-BR') : ""}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowStoreClosedModal(false)}>Entendi</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
