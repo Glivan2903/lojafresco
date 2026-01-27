@@ -10,6 +10,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle } from "lucide-react"
 import { betelAPI, type Customer, type Product, type PaymentMethod } from "@/lib/api"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+
 interface QuoteItem {
   product: Product
   quantity: number
@@ -23,6 +34,9 @@ export default function HomePage() {
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([])
   const [appState, setAppState] = useState<AppState>("products")
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+
+  const [showPixModal, setShowPixModal] = useState(false)
+  const [pixData, setPixData] = useState<{ nome: string; chave: string; valor: string } | null>(null)
 
   useEffect(() => {
     if (customer) {
@@ -261,6 +275,26 @@ Obrigado pela preferência!
         console.error("Failed to send WhatsApp order notification", msgError)
       }
 
+      // If PIX, fetch key and show modal
+      if (orderData.paymentMethod === 'pix') {
+        try {
+          const pixInfo = await betelAPI.getPixKey()
+          if (pixInfo) {
+            const total = calculateTotal()
+            setPixData({
+              nome: pixInfo.nome,
+              chave: pixInfo.chave,
+              valor: new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(total)
+            })
+            setShowPixModal(true)
+            // Don't change state yet, let them see the modal
+            return
+          }
+        } catch (e) {
+          console.error("Error showing PIX modal:", e)
+        }
+      }
+
       setAppState("order-submitted")
       setTimeout(() => {
         setQuoteItems([])
@@ -375,6 +409,53 @@ Obrigado pela preferência!
           </div>
         )}
       </main>
+
+      {/* PIX Payment Modal */}
+      <AlertDialog open={showPixModal} onOpenChange={setShowPixModal}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="bg-background border rounded-lg shadow-lg p-6 max-w-md w-full m-4">
+            <div className="space-y-4">
+              <div className="space-y-2 text-center">
+                <h2 className="text-xl font-bold">Pagamento via PIX</h2>
+                <p className="text-muted-foreground">Utilize os dados abaixo para realizar o pagamento.</p>
+              </div>
+
+              {pixData && (
+                <div className="space-y-4 p-4 bg-muted rounded-md">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <span className="font-semibold">Valor Total:</span>
+                    <span className="text-lg font-bold text-primary">{pixData.valor}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-semibold block">Nome do Recebedor:</span>
+                    <span className="break-words">{pixData.nome}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-semibold block">Chave PIX:</span>
+                    <div className="p-2 bg-background rounded border break-all font-mono text-sm">
+                      {pixData.chave}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <Button onClick={() => {
+                  setShowPixModal(false)
+                  setAppState("order-submitted")
+                  setTimeout(() => {
+                    setQuoteItems([])
+                    setAppState("products")
+                  }, 4000)
+                }}>
+                  Já realizei o pagamento
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AlertDialog>
+
     </div>
   )
 }

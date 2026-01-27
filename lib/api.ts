@@ -1064,6 +1064,45 @@ class BetelAPI {
     }
   }
 
+  async getPixKey(): Promise<{ nome: string; chave: string } | null> {
+    try {
+      const response = await fetch("https://api.gestaoclick.com/clientes?cpf_cnpj=055.101.773-22", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "access-token": "d159d4d63936d5945b8774c7e5d4981bec044b63",
+          "secret-access-token": "4cc7cb82fad18531c4834b243d31c99245adfa63"
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PIX key: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      if (data.code === 200 && data.data && data.data.length > 0) {
+        const clientData = data.data[0]
+        if (clientData.contatos && clientData.contatos.length > 0) {
+          const contato = clientData.contatos[0].contato
+          // As per user request: "Nome da pessoa que irá receber" is "nome"
+          // "chave no campo Observação" is "observacao"
+          // Example observacao: "Chave aleatória: 2828204a-a534-4c22-a668-2ad2df87f016"
+          // I should probably return the whole string or try to clean it? 
+          // User just said "exibir ... chave pix". If the field contains "Chave aleatória: ...", displaying it as is seems safe/correct.
+          return {
+            nome: contato.nome,
+            chave: contato.observacao
+          }
+        }
+      }
+      return null
+    } catch (error) {
+      console.error("[v0] Error fetching PIX key:", error)
+      return null
+    }
+  }
+
   async getCarriers(): Promise<Carrier[]> {
     try {
       const response = await this.request("/transportadoras")
