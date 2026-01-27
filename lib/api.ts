@@ -849,7 +849,7 @@ class BetelAPI {
         vendedor_id: "45", // As per example
         nome_canal_venda: "Loja Virtual", // Added as per request
         data: new Date().toISOString().split("T")[0],
-        prazo_entrega: "",
+        prazo_entrega: new Date().toISOString().split("T")[0],
         situacao_id: situacaoId, // "3150"
         nome_situacao: nomeSituacao, // "Confirmado"
         transportadora_id: "", // As per example
