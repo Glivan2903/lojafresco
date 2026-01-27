@@ -387,7 +387,10 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
       // Auto-fill topiqueiro name if selected from dropdown
       if (formData.deliveryMethod === "topiqueiro" && formData.selectedCarrierId && formData.selectedCarrierId !== "others") {
         const selectedCarrier = carriers.find(c => c.id === formData.selectedCarrierId)
-        if (selectedCarrier) {
+
+        // Only auto-fill if the carrier is NOT "Não Encontrado"
+        // If it is "Não Encontrado", we respect the manual input from the form
+        if (selectedCarrier && selectedCarrier.nome.toLowerCase() !== "não encontrado") {
           dataToSubmit.topiqueiroName = selectedCarrier.nome
           // Clear time and phone for standard carriers as they are not manually entered
           dataToSubmit.topiqueiroTime = ""
