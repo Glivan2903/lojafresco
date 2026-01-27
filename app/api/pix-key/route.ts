@@ -19,15 +19,24 @@ export async function GET() {
         const data = await response.json()
 
         // Check if the response matches what we expect
-        if (data.code === 200 && data.data && data.data.length > 0) {
-            const clientData = data.data[0]
-            if (clientData.contatos && clientData.contatos.length > 0) {
-                const contato = clientData.contatos[0].contato
-                return NextResponse.json({
-                    nome: contato.nome,
-                    tipo: contato.cargo,
-                    chave: contato.observacao
-                })
+        if (data.code === 200 && Array.isArray(data.data)) {
+            // Iterate through all clients to find one with contacts
+            for (const client of data.data) {
+                if (Array.isArray(client.contatos) && client.contatos.length > 0) {
+                    // Find the contact that is a PIX key
+                    const pixContactWrapper = client.contatos.find((c: any) =>
+                        c.contato && c.contato.nome_tipo === "Chave Pix"
+                    )
+
+                    if (pixContactWrapper) {
+                        const contato = pixContactWrapper.contato
+                        return NextResponse.json({
+                            nome: contato.nome,
+                            tipo: contato.cargo,
+                            chave: contato.observacao
+                        })
+                    }
+                }
             }
         }
 
