@@ -317,7 +317,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
             placeholder="Buscar produtos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 border-yellow-400 focus-visible:ring-yellow-400"
           />
         </div>
 

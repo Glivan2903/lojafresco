@@ -46,7 +46,7 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLog
               <span className="hidden sm:inline">Consultar Pedidos</span>
             </Button>
 
-            <Button variant="outline" onClick={() => setShowFinancial(true)} className="bg-transparent text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50">
+            <Button variant="outline" onClick={() => setShowFinancial(true)} className="bg-transparent">
               <DollarSign className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Débitos</span>
             </Button>
