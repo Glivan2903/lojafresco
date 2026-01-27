@@ -1113,8 +1113,19 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Loja Fechada</AlertDialogTitle>
-            <AlertDialogDescription>
-              No momento nossa loja encontra-se fechada. Seu pedido será agendado para o próximo dia útil: {formData.deliveryDate ? new Date(formData.deliveryDate + "T12:00:00").toLocaleDateString('pt-BR') : ""}.
+            <AlertDialogDescription className="space-y-2">
+              <p>Estamos fora do nosso horário de funcionamento. Seu pedido será agendado para o próximo dia útil.</p>
+              <div className="text-sm bg-muted p-2 rounded-md">
+                <p className="font-semibold mb-1">Horário de Atendimento:</p>
+                <p>Segunda a Sexta: 08:00 às 17:30</p>
+                <p>Sábado: 08:00 às 13:00</p>
+                <p>Domingos e Feriados: Fechado</p>
+              </div>
+              {formData.deliveryDate && (
+                <p className="font-medium text-primary">
+                  Nova data agendada: {new Date(formData.deliveryDate + "T12:00:00").toLocaleDateString('pt-BR')}
+                </p>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
