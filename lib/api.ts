@@ -719,7 +719,7 @@ class BetelAPI {
             // "atributo_id" seems to be the definition.
             atributo_id: "82984",
             descricao: "Nome Topiqueiro",
-            conteudo: sale.topiqueiroName || "",
+            conteudo: sale.topiqueiroName || "Não Encontrado",
             tipo: "texto_simples"
           }
         },
