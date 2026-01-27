@@ -426,13 +426,15 @@ Obrigado pela preferência!
       <AlertDialog open={showPixModal} onOpenChange={setShowPixModal}>
         <AlertDialogContent className="max-w-md">
           <div className="space-y-4">
-            <div className="space-y-2 text-center">
-              <h2 className="text-xl font-bold text-primary flex items-center justify-center gap-2">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl font-bold text-primary flex items-center justify-center gap-2">
                 <CheckCircle className="w-6 h-6" />
                 Pedido concluído!
-              </h2>
-              <p className="text-muted-foreground">Utilize os dados abaixo para realizar o pagamento via PIX.</p>
-            </div>
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-center text-muted-foreground">
+                Utilize os dados abaixo para realizar o pagamento via PIX.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
             {pixData && (
               <div className="space-y-4 p-4 bg-muted rounded-md border">
