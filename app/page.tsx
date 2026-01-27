@@ -468,7 +468,9 @@ Obrigado pela preferência!
                 setShowPixModal(false)
                 setAppState("order-submitted")
                 setTimeout(() => {
-                }, 300)
+                  setQuoteItems([])
+                  setAppState("products")
+                }, 4000)
               }} className="w-full">
                 Já realizei o pagamento
               </Button>
