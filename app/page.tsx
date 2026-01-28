@@ -236,56 +236,43 @@ Valor: ${orderData.returnedItemDetails.value}
       console.log("[v0] Calling betelAPI.createSale")
 
       const result = await betelAPI.createSale(enhancedQuoteData)
+
       console.log("[v0] Order submitted successfully:", result)
 
       // Send WhatsApp Notification
       try {
-        // Extensive debugging for WhatsApp Notification
-        console.log("[v0] WhatsApp Block Reached. Result type:", typeof result);
-        console.log("[v0] Result keys:", result ? Object.keys(result) : "null");
-        if (result && typeof result === 'object' && 'data' in result) {
-          console.log("[v0] Result.data keys:", Object.keys((result as any).data));
-        }
+        const formatMoney = (val: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val)
 
-        // Robust extraction of sale data and hash
-        const saleData = result.data || result;
-        // Check for hash in various potential locations
-        const saleHash = saleData.hash || (saleData.data && saleData.data.hash);
+        const itemsList = quoteItems.map(item =>
+          `${item.quantity}x ${item.product.nome} - ${formatMoney((item.product.valor_venda || item.product.preco_venda || item.product.preco || 0) * item.quantity)}`
+        ).join("\n")
 
-        const customerName = saleData.nome_cliente ||
-          (saleData.data && saleData.data.nome_cliente) ||
-          orderData.customerDetails.nome ||
-          customer.nome;
+        const totalValue = formatMoney(quoteItems.reduce((acc, item) => acc + (getProductPrice(item.product) * item.quantity), 0))
 
-        console.log("[v0] WhatsApp Notification Debug:", {
-          hasHash: !!saleHash,
-          hash: saleHash,
-          customerName,
-          saleDataIsResult: saleData === result
-        });
+        const deliveryLabel = {
+          "delivery": "Entregar",
+          "pickup": "Retirada na Loja",
+          "topiqueiro": "Topiqueiro",
+          "motouber": "Moto Uber"
+        }[orderData.deliveryMethod] || orderData.deliveryMethod
 
-        if (saleHash) {
-          console.log("[v0] Sale hash found, preparing message...");
-          const message = `Olá *${customerName}*
-Recebemos o seu pedido, lojinha virtual ✅
+        const message = `Olá *${orderData.customerDetails.nome}*
+✅ Recebemos seu pedido em nossa lojinha virtual com sucesso.
 
-https://gestaoclick.com/venda/${saleHash}
+*Segue link abaixo*
+https://gestaoclick.com/venda/${result.hash}
 
 Obrigado pela preferência!
 *Equipe Icore Tech*`
 
-          await fetch("/api/send-message", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              number: `55${(orderData.customerDetails.telefone || customer.telefone || "").replace(/\D/g, "")}`,
-              body: message
-            })
+        await fetch("/api/send-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            number: `55${(orderData.customerDetails.telefone || customer.telefone || "").replace(/\D/g, "")}`,
+            body: message
           })
-        } else {
-          console.warn("Sale hash not found, skipping WhatsApp notification link.")
-        }
-
+        })
       } catch (msgError) {
         console.error("Failed to send WhatsApp order notification", msgError)
       }
