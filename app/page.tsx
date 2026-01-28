@@ -240,6 +240,13 @@ Valor: ${orderData.returnedItemDetails.value}
 
       // Send WhatsApp Notification
       try {
+        // Extensive debugging for WhatsApp Notification
+        console.log("[v0] WhatsApp Block Reached. Result type:", typeof result);
+        console.log("[v0] Result keys:", result ? Object.keys(result) : "null");
+        if (result && typeof result === 'object' && 'data' in result) {
+          console.log("[v0] Result.data keys:", Object.keys((result as any).data));
+        }
+
         // Robust extraction of sale data and hash
         const saleData = result.data || result;
         // Check for hash in various potential locations
@@ -253,7 +260,8 @@ Valor: ${orderData.returnedItemDetails.value}
         console.log("[v0] WhatsApp Notification Debug:", {
           hasHash: !!saleHash,
           hash: saleHash,
-          customerName
+          customerName,
+          saleDataIsResult: saleData === result
         });
 
         if (saleHash) {
