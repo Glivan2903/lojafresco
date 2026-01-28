@@ -236,17 +236,28 @@ Valor: ${orderData.returnedItemDetails.value}
       console.log("[v0] Calling betelAPI.createSale")
 
       const result = await betelAPI.createSale(enhancedQuoteData)
-
       console.log("[v0] Order submitted successfully:", result)
 
       // Send WhatsApp Notification
       try {
+        // Robust extraction of sale data and hash
         const saleData = result.data || result;
-        const saleHash = saleData.hash;
-        const customerName = saleData.nome_cliente || orderData.customerDetails.nome || customer.nome;
+        // Check for hash in various potential locations
+        const saleHash = saleData.hash || (saleData.data && saleData.data.hash);
+
+        const customerName = saleData.nome_cliente ||
+          (saleData.data && saleData.data.nome_cliente) ||
+          orderData.customerDetails.nome ||
+          customer.nome;
+
+        console.log("[v0] WhatsApp Notification Debug:", {
+          hasHash: !!saleHash,
+          hash: saleHash,
+          customerName
+        });
 
         if (saleHash) {
-          console.log("[v0] Sale hash found:", saleHash);
+          console.log("[v0] Sale hash found, preparing message...");
           const message = `Olá *${customerName}*
 Recebemos o seu pedido, lojinha virtual ✅
 
