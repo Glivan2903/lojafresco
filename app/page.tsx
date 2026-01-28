@@ -241,45 +241,31 @@ Valor: ${orderData.returnedItemDetails.value}
 
       // Send WhatsApp Notification
       try {
-        const formatMoney = (val: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val)
+        const saleData = result.data || result;
+        const saleHash = saleData.hash;
+        const customerName = saleData.nome_cliente || orderData.customerDetails.nome || customer.nome;
 
-        const itemsList = quoteItems.map(item =>
-          `${item.quantity}x ${item.product.nome} - ${formatMoney((item.product.valor_venda || item.product.preco_venda || item.product.preco || 0) * item.quantity)}`
-        ).join("\n")
+        if (saleHash) {
+          const message = `Olá *${customerName}*
+Recebemos o seu pedido, lojinha virtual ✅
 
-        const totalValue = formatMoney(quoteItems.reduce((acc, item) => acc + (getProductPrice(item.product) * item.quantity), 0))
-
-        const deliveryLabel = {
-          "delivery": "Entregar",
-          "pickup": "Retirada na Loja",
-          "topiqueiro": "Topiqueiro",
-          "motouber": "Moto Uber"
-        }[orderData.deliveryMethod] || orderData.deliveryMethod
-
-        const message = `Olá *${orderData.customerDetails.nome}*
-Recebemos o seu pedido ✅
-
-*Resumo do Pedido:*
-${itemsList}
-
-*Total:* ${totalValue}
-
-*Entregar:* ${deliveryLabel}
-${orderData.deliveryMethod === 'delivery' ? `Endereço: ${orderData.customerDetails.endereco.rua}, ${orderData.customerDetails.endereco.numero} - ${orderData.customerDetails.endereco.bairro}, ${orderData.customerDetails.endereco.cidade}/${orderData.customerDetails.endereco.estado}` : ''}
-
-*Pagamento:* ${orderData.paymentMethod}
+https://gestaoclick.com/venda/${saleHash}
 
 Obrigado pela preferência!
 *Equipe Icore Tech*`
 
-        await fetch("/api/send-message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            number: `55${(orderData.customerDetails.telefone || customer.telefone || "").replace(/\D/g, "")}`,
-            body: message
+          await fetch("/api/send-message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              number: `55${(orderData.customerDetails.telefone || customer.telefone || "").replace(/\D/g, "")}`,
+              body: message
+            })
           })
-        })
+        } else {
+          console.warn("Sale hash not found, skipping WhatsApp notification link.")
+        }
+
       } catch (msgError) {
         console.error("Failed to send WhatsApp order notification", msgError)
       }
@@ -367,7 +353,7 @@ Obrigado pela preferência!
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              Você receberá um email de confirmação e será redirecionado automaticamente.
+              Você receberá uma mensagem de confirmação no whatsapp e será redirecionado automaticamente.
             </AlertDescription>
           </Alert>
         </div>
