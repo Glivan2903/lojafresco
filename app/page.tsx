@@ -246,6 +246,7 @@ Valor: ${orderData.returnedItemDetails.value}
         const customerName = saleData.nome_cliente || orderData.customerDetails.nome || customer.nome;
 
         if (saleHash) {
+          console.log("[v0] Sale hash found:", saleHash);
           const message = `Olá *${customerName}*
 Recebemos o seu pedido, lojinha virtual ✅
 
