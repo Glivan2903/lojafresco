@@ -86,7 +86,7 @@ export function CustomerFinancial({ customer, isOpen, onClose }: CustomerFinanci
                         </div>
                     </CardHeader>
 
-                    <CardContent className="flex-1 overflow-y-auto p-4 md:p-6 bg-background/50">
+                    <CardContent className="flex-1 overflow-y-auto max-h-[60vh] p-4 md:p-6 bg-background/50 pr-2">
                         {isLoading && receivables.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 space-y-4 text-muted-foreground">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

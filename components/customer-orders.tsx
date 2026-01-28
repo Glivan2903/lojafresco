@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { X, Package, Calendar, DollarSign, Eye, ArrowLeft } from "lucide-react"
+import { X, Package, Calendar, DollarSign, Eye, ArrowLeft, RefreshCw } from "lucide-react"
 import { betelAPI, type Customer } from "@/lib/api"
 
 interface Order {
@@ -179,9 +179,14 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
               {selectedOrder ? "Detalhes do Pedido" : "Consultar Pedidos"}
             </CardTitle>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={fetchOrders} disabled={loading} title="Atualizar">
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent className="overflow-y-auto max-h-[60vh]">
