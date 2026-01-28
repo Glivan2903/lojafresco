@@ -12,6 +12,15 @@ import { validateCPF, validateCNPJ } from "@/lib/validations"
 import { betelAPI, type Customer } from "@/lib/api"
 import { AnimatedBackground } from "@/components/animated-background"
 import { toast } from "@/components/ui/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface CustomerIdentificationProps {
   onCustomerIdentified: (customer: Customer) => void
@@ -40,6 +49,9 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
   const [showAccountPending, setShowAccountPending] = useState(false)
   const [documentType, setDocumentType] = useState<"cpf" | "cnpj">("cpf")
   const [showPassword, setShowPassword] = useState(false)
+  const [showWarningModal, setShowWarningModal] = useState(false)
+
+
 
   useEffect(() => {
     const savedData = localStorage.getItem("ayla-login-data")
@@ -555,6 +567,37 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <AlertDialog open={showWarningModal} onOpenChange={setShowWarningModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Atenção</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se você já possui cadastro e não conseguiu realizar o login, entre em contato pelo whatsapp para cadastrar email e documento para poder acessar a loja para evitar duplicação de cadastro na base.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setShowWarningModal(false)
+              setFormData({
+                email: "",
+                documento: "",
+                nome: "",
+                telefone: "",
+                cep: "",
+                rua: "",
+                numero: "",
+                complemento: "",
+                bairro: "",
+                cidade: "",
+                estado: "",
+                data_nascimento: "",
+              })
+              setShowRegistration(true)
+            }}>Entendi</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AnimatedBackground />
 
       <Card className="w-full max-w-[400px] shadow-2xl border-0 bg-[#E5E5E5] rounded-xl overflow-hidden">
@@ -648,23 +691,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
             <div className="text-center text-sm text-gray-500 mt-4">
               Não tem uma conta?{" "}
               <button
-                onClick={() => {
-                  setFormData({
-                    email: "",
-                    documento: "",
-                    nome: "",
-                    telefone: "",
-                    cep: "",
-                    rua: "",
-                    numero: "",
-                    complemento: "",
-                    bairro: "",
-                    cidade: "",
-                    estado: "",
-                    data_nascimento: "",
-                  })
-                  setShowRegistration(true)
-                }}
+                onClick={() => setShowWarningModal(true)}
                 className="text-primary hover:underline font-medium"
               >
                 Cadastre-se

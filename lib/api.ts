@@ -1,4 +1,40 @@
 const API_BASE_URL = "/api" // Now using local API routes
+export interface Sale {
+  id: string
+  numero: string
+  codigo?: string // Added codigo
+  data_emissao?: string // optional now as data is used in example
+  data?: string // Added data
+  valor_total: string
+  situacao?: string
+  nome_situacao?: string // Added nome_situacao
+  cliente: {
+    id: string
+    nome: string
+  }
+  // Support both structures if unsure, or prefer the one provided
+  produtos?: {
+    produto: {
+      produto_id: string
+      nome_produto: string
+      quantidade: string
+      valor_venda: string
+      valor_total: string
+      codigo?: string
+    }
+  }[]
+  itens?: {
+    id: string
+    produto_id: string
+    quantidade: string
+    valor_unitario: string
+    valor_total: string
+    produto: {
+      nome: string
+      codigo: string
+    }
+  }[]
+}
 
 export interface Customer {
   id?: string
@@ -118,8 +154,42 @@ export interface Receivable {
   codigo: string
   nome_forma_pagamento: string
   situacao_id?: string
-  parcela?: string // Not seen in example but keeping just in case
-  observacao?: string // Not seen but keeping
+  parcela?: string
+  observacao?: string
+  // New fields from detail view
+  juros?: string
+  desconto?: string
+  taxa_banco?: string
+  taxa_operadora?: string
+  plano_contas_id?: string
+  nome_plano_conta?: string
+  centro_custo_id?: string
+  nome_centro_custo?: string
+  conta_bancaria_id?: string
+  nome_conta_bancaria?: string
+  forma_pagamento_id?: string
+  entidade?: string
+  fornecedor_id?: string
+  nome_fornecedor?: string
+  cliente_id?: string
+  nome_cliente?: string
+  transportadora_id?: string
+  nome_transportadora?: string
+  funcionario_id?: string
+  nome_funcionario?: string
+  liquidado?: string
+  data_liquidacao?: string
+  data_competencia?: string
+  usuario_id?: string
+  nome_usuario?: string
+  loja_id?: string
+  nome_loja?: string
+  cadastrado_em?: string
+  modificado_em?: string
+  categorias_agrupadas?: number
+  centros_custos_agrupados?: number
+  atributos?: any[]
+  rateios?: any[]
 }
 
 class BetelAPI {
@@ -1101,6 +1171,35 @@ class BetelAPI {
     } catch (error) {
       console.error("Failed to load carriers:", error)
       return []
+    }
+  }
+
+  async getReceivableDetail(id: string): Promise<Receivable> {
+    try {
+      // Assuming the API supports fetching a single receivable by ID via /recebimentos/:id or similar
+      // If not, we might need to filter from the list, but the user requested "passando o ID na query"
+      // Let's try /recebimentos/:id first as it's standard REST
+      // Or /recebimentos?id=:id
+
+      // Based on user request "fazendo a mesma requisição passando o ID na query"
+      // It implies using the same endpoint but valid for a single item.
+      // However, typical pattern here is likely /recebimentos/:id or query param. 
+      // I'll try /recebimentos/:id first for detail.
+
+      const response = await this.request(`/recebimentos/${id}`, {
+        method: "GET"
+      })
+
+      if (Array.isArray(response) && response.length > 0) {
+        return response[0]
+      } else if (response && response.data) {
+        return response.data
+      }
+      return response
+
+    } catch (error) {
+      console.error("Failed to fetch receivable detail:", error)
+      throw error
     }
   }
 
