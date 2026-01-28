@@ -87,6 +87,17 @@ interface ViaCEPResponse {
 
 export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }: OrderFormProps) {
   // Initialize date to today's date
+  const formatDateDisplay = (dateString: string) => {
+    if (!dateString) return ""
+    // Check if it's a simple YYYY-MM-DD string to avoid timezone issues with Date() constructor
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString.substring(0, 10))) {
+      const parts = dateString.substring(0, 10).split('-')
+      return `${parts[2]}/${parts[1]}/${parts[0]}`
+    }
+    // Fallback for other formats
+    return new Date(dateString).toLocaleDateString("pt-BR")
+  }
+
   const [formData, setFormData] = useState<OrderData>({
     customerDetails: {
       nome: customer.nome,
@@ -213,6 +224,9 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
       setIsLoadingCep(false)
     }
   }
+
+
+
 
 
 
@@ -880,7 +894,7 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                               {customerOrders.length > 0 ? (
                                 customerOrders.map((order) => (
                                   <SelectItem key={order.id} value={order.id}>
-                                    Pedido #{order.codigo || order.numero || order.id} - {new Date(order.data_criacao || order.data).toLocaleDateString("pt-BR")} - {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.total || order.valor_total || 0)}
+                                    Pedido #{order.codigo || order.numero || order.id} - {formatDateDisplay(order.data_criacao || order.data)} - {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.total || order.valor_total || 0)}
                                   </SelectItem>
                                 ))
                               ) : (
