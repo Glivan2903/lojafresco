@@ -162,6 +162,12 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
   const [returnedItemDate, setReturnedItemDate] = useState("")
   const [returnedItemValue, setReturnedItemValue] = useState("")
 
+  // Smart Return Logic State
+  const [returnAction, setReturnAction] = useState<"credit" | "refund">("credit")
+  const [refundPixKey, setRefundPixKey] = useState("")
+  const [remainingPaymentMethod, setRemainingPaymentMethod] = useState<"pix" | "money">("pix")
+  const [remainingPixKey, setRemainingPixKey] = useState("")
+
   const exchangeReasons = [
     "Touch ruim",
     "Imagem ruim",
@@ -382,6 +388,25 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
       }
 
       if (!returnedItemCondition.trim()) newErrors.returnedItemCondition = "Estado da peça é obrigatório"
+
+      // Smart Return Validation
+      if (exchangeOrder && selectedExchangeItems.length > 0) {
+        const itemId = selectedExchangeItems[0]
+        const selectedItem = exchangeOrder.produtos?.find((item: any) => getItemId(item) === itemId)
+
+        if (selectedItem) {
+          const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
+          const difference = itemValue - total
+
+          if (difference > 0 && returnAction === "refund" && !refundPixKey.trim()) {
+            newErrors.refundPixKey = "Chave PIX para estorno é obrigatória"
+          }
+
+          if (difference < 0 && remainingPaymentMethod === "pix" && !remainingPixKey.trim()) {
+            newErrors.remainingPixKey = "Chave PIX para pagamento é obrigatória"
+          }
+        }
+      }
     }
 
     if (!formData.deliveryDate) {
@@ -462,12 +487,45 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
         const selectedItem = exchangeOrder.produtos?.find((item: any) => getItemId(item) === itemId)
 
         if (selectedItem) {
+          const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
+          const difference = itemValue - total
+          let observations = formData.observations || ""
+
+          // Build Smart Observations
+          observations += `\n\n--- DETALHES CRÉDITO PEÇA DEVOLVIDA ---\n`
+          observations += `Peça: ${selectedItem.produto?.nome_produto || selectedItem.nome_produto}\n`
+          observations += `Estado: ${returnedItemCondition}\n`
+          observations += `Valor Peça Antiga: ${formatPrice(itemValue)}\n`
+          observations += `Valor Nova Compra: ${formatPrice(total)}\n`
+
+          if (difference === 0) {
+            observations += `Situação: Troca de valor igual.\n`
+          } else if (difference > 0) {
+            // Excess
+            observations += `Situação: Sobrou ${formatPrice(difference)}.\n`
+            if (returnAction === "credit") {
+              observations += `Ação: Gerar Crédito na Loja.\n`
+            } else {
+              observations += `Ação: Estorno via PIX.\n`
+              observations += `Chave PIX para Estorno: ${refundPixKey}\n`
+            }
+          } else {
+            // Remaining to pay
+            observations += `Situação: Faltam ${formatPrice(Math.abs(difference))}.\n`
+            observations += `Forma de Pagamento Restante: ${remainingPaymentMethod === "pix" ? "PIX" : "Dinheiro"}\n`
+            if (remainingPaymentMethod === "pix") {
+              observations += `Chave PIX utilizada: ${remainingPixKey}\n`
+            }
+          }
+
+          dataToSubmit.observations = observations
+
           dataToSubmit.returnedItemDetails = {
             name: selectedItem.produto?.nome_produto || selectedItem.nome_produto || "Peça Devolvida",
             condition: returnedItemCondition,
-            purchaseDate: exchangeOrder.data_criacao || exchangeOrder.data || new Date().toISOString().split("T")[0], // Fallback if no date
-            value: selectedItem.produto?.valor_venda || selectedItem.valor_venda || "0",
-            returnedItemValue: selectedItem.produto?.valor_venda || selectedItem.valor_venda || "0"
+            purchaseDate: exchangeOrder.data_criacao || exchangeOrder.data || new Date().toISOString().split("T")[0],
+            value: String(itemValue),
+            returnedItemValue: String(itemValue)
           }
         }
       }
@@ -1076,6 +1134,98 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                             />
                             {errors.returnedItemCondition && <p className="text-sm text-destructive">{errors.returnedItemCondition}</p>}
                           </div>
+
+                          {/* Value Comparison Logic */}
+                          {selectedExchangeItems.length > 0 && (() => {
+                            const itemId = selectedExchangeItems[0]
+                            const selectedItem = exchangeOrder.produtos?.find((item: any) => getItemId(item) === itemId)
+                            if (!selectedItem) return null
+
+                            const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
+                            const difference = itemValue - total
+
+                            return (
+                              <div className="space-y-4 pt-4 border-t border-dashed">
+                                <div className="text-sm space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>Valor Peça Antiga:</span>
+                                    <span className="font-medium">{formatPrice(itemValue)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Valor Nova Compra:</span>
+                                    <span className="font-medium">{formatPrice(total)}</span>
+                                  </div>
+                                  <div className="flex justify-between font-bold text-base pt-1 border-t">
+                                    <span>{difference >= 0 ? "Sobrou:" : "Falta Pagar:"}</span>
+                                    <span className={difference >= 0 ? "text-green-600" : "text-red-600"}>
+                                      {formatPrice(Math.abs(difference))}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {difference > 0 && (
+                                  <div className="space-y-3 p-3 bg-green-50 rounded-md border border-green-100">
+                                    <Label>Como deseja receber a diferença?</Label>
+                                    <RadioGroup value={returnAction} onValueChange={(v: "credit" | "refund") => setReturnAction(v)}>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="credit" id="ra-credit" />
+                                        <Label htmlFor="ra-credit">Gerar Crédito na Loja</Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="refund" id="ra-refund" />
+                                        <Label htmlFor="ra-refund">Estorno (Devolução)</Label>
+                                      </div>
+                                    </RadioGroup>
+
+                                    {returnAction === "refund" && (
+                                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                        <Label htmlFor="refundPixKey">Chave PIX para Estorno *</Label>
+                                        <Input
+                                          id="refundPixKey"
+                                          value={refundPixKey}
+                                          onChange={e => setRefundPixKey(e.target.value)}
+                                          placeholder="CPF, Email ou Telefone"
+                                          className={errors.refundPixKey ? "border-destructive" : ""}
+                                        />
+                                        {errors.refundPixKey && <p className="text-sm text-destructive">{errors.refundPixKey}</p>}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {difference < 0 && (
+                                  <div className="space-y-3 p-3 bg-red-50 rounded-md border border-red-100">
+                                    <Label>Como deseja pagar a diferença?</Label>
+                                    <RadioGroup value={remainingPaymentMethod} onValueChange={(v: "pix" | "money") => setRemainingPaymentMethod(v)}>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="pix" id="pm-pix" />
+                                        <Label htmlFor="pm-pix">PIX</Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="money" id="pm-money" />
+                                        <Label htmlFor="pm-money">Dinheiro</Label>
+                                      </div>
+                                    </RadioGroup>
+
+                                    {remainingPaymentMethod === "pix" && (
+                                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                        <Label htmlFor="remainingPixKey">Chave PIX *</Label>
+                                        <Input
+                                          id="remainingPixKey"
+                                          value={remainingPixKey}
+                                          onChange={e => setRemainingPixKey(e.target.value)}
+                                          placeholder="Informe a chave utilizada"
+                                          className={errors.remainingPixKey ? "border-destructive" : ""}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Informe a chave pix que você fará a transferência.</p>
+                                        {errors.remainingPixKey && <p className="text-sm text-destructive">{errors.remainingPixKey}</p>}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
                     </div>
