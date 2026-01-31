@@ -280,6 +280,10 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
     })
   }
 
+  const getItemId = (item: any) => {
+    return item.produto?.produto_id || item.produto?.id || item.id || ""
+  }
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
@@ -434,9 +438,9 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
         dataToSubmit.exchangeDetails = {
           originalOrderId: exchangeOrder.id || exchangeOrder.codigo || exchangeOrderId,
           selectedItems: exchangeOrder.produtos
-            ?.filter((item: any) => selectedExchangeItems.includes(item.produto?.id || item.id))
+            ?.filter((item: any) => selectedExchangeItems.includes(getItemId(item)))
             .map((item: any) => ({
-              id: item.produto?.id || item.id,
+              id: getItemId(item),
               name: item.produto?.nome_produto || item.nome_produto || "Unknown Product"
             })) || [],
           reason: exchangeReason,
@@ -922,23 +926,26 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                           </div>
 
                           <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {exchangeOrder.produtos?.map((item: any, index: number) => (
-                              <div key={item.id || index} className="flex items-start gap-2 p-2 bg-background rounded border">
-                                <Checkbox
-                                  id={`item-${item.id || index}`}
-                                  checked={selectedExchangeItems.includes(item.produto?.id || item.id)}
-                                  onCheckedChange={() => handleToggleExchangeItem(item.produto?.id || item.id)}
-                                />
-                                <div className="space-y-1">
-                                  <Label htmlFor={`item-${item.id || index}`} className="font-medium cursor-pointer">
-                                    {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
-                                  </Label>
-                                  <p className="text-xs text-muted-foreground">
-                                    Qtd: {item.produto?.quantidade || item.quantidade} | Valor: {formatPrice(Number(item.produto?.valor_venda || item.valor_venda || 0))}
-                                  </p>
+                            {exchangeOrder.produtos?.map((item: any, index: number) => {
+                              const itemId = getItemId(item) || `index-${index}`
+                              return (
+                                <div key={itemId} className="flex items-start gap-2 p-2 bg-background rounded border">
+                                  <Checkbox
+                                    id={`item-${itemId}`}
+                                    checked={selectedExchangeItems.includes(itemId)}
+                                    onCheckedChange={() => handleToggleExchangeItem(itemId)}
+                                  />
+                                  <div className="space-y-1">
+                                    <Label htmlFor={`item-${itemId}`} className="font-medium cursor-pointer">
+                                      {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                      Qtd: {item.produto?.quantidade || item.quantidade} | Valor: {formatPrice(Number(item.produto?.valor_venda || item.valor_venda || 0))}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              )
+                            })}
                           </div>
                           {errors.exchangeItems && <p className="text-sm text-destructive">{errors.exchangeItems}</p>}
 
