@@ -134,7 +134,13 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
       const categoriesData = await betelAPI.getCategories()
       console.log("[v0] Categories loaded:", categoriesData)
 
-      const sortedCategories = categoriesData.sort((a, b) =>
+      const blockedCategories = ["Insumos", "Mercadoria", "Conector", "Gaveta", "Insumoo", "Placa", "Slot", "Insumo"]
+
+      const filteredCategories = categoriesData.filter(c =>
+        !blockedCategories.some(blocked => c.nome.toLowerCase().includes(blocked.toLowerCase()))
+      )
+
+      const sortedCategories = filteredCategories.sort((a, b) =>
         a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
       )
 
@@ -317,7 +323,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
             placeholder="Buscar produtos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-yellow-400 focus-visible:ring-yellow-400"
+            className="pl-10 border-yellow-400 focus-visible:ring-yellow-400 h-12 text-lg"
           />
         </div>
 

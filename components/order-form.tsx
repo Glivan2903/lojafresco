@@ -18,7 +18,7 @@ import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Package, AlertTriangle, Bus, Bike } from "lucide-react"
+import { Search, Package, AlertTriangle, Bus, Bike, Clock } from "lucide-react"
 import { betelAPI } from "@/lib/api"
 import {
   AlertDialog,
@@ -36,6 +36,7 @@ interface OrderFormProps {
   onSubmit: (orderData: OrderData) => Promise<void>
   onBack: () => void
   paymentMethods: PaymentMethod[]
+  cartItems?: any[] // Added cartItems prop
 }
 
 export interface OrderData {
@@ -85,7 +86,8 @@ interface ViaCEPResponse {
   erro?: boolean
 }
 
-export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }: OrderFormProps) {
+export function OrderForm(props: OrderFormProps) {
+  const { customer, total, onSubmit, onBack, paymentMethods, cartItems } = props
   // Initialize date to today's date
   const formatDateDisplay = (dateString: string) => {
     if (!dateString) return ""
@@ -161,6 +163,9 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
   const [returnedItemCondition, setReturnedItemCondition] = useState("")
   const [returnedItemDate, setReturnedItemDate] = useState("")
   const [returnedItemValue, setReturnedItemValue] = useState("")
+
+  const [exchangeValidationAlertOpen, setExchangeValidationAlertOpen] = useState(false) // New state for alert
+  const [showErrorModal, setShowErrorModal] = useState(false) // State for submission error modal
 
   // Smart Return Logic State
   const [returnAction, setReturnAction] = useState<"credit" | "refund">("credit")
@@ -283,6 +288,35 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
       return
     }
 
+    // Check for code validation in "Troca" mode
+    if (formData.paymentMethod === "Troca" && !selectedExchangeItems.includes(itemId)) {
+      // We are selecting a new item
+      const item = exchangeOrder.produtos?.find((p: any) => getItemId(p) === itemId)
+      if (item && cartItems && cartItems.length > 0) {
+        // Get the code from the exchange item
+        // The API structure for sales details seems to be nested in 'produto'
+        const exchangeItemCode = item.produto?.codigo || item.produto?.codigo_interno || item.codigo
+
+        console.log("Validating exchange item code:", exchangeItemCode)
+        console.log("Cart items:", cartItems)
+
+        // Check if ANY item in the cart has a matching code
+        const hasMatchingCode = cartItems.some(cartItem => {
+          const cartItemCode = cartItem.product.codigo_interno || cartItem.product.codigo
+          return cartItemCode && exchangeItemCode && String(cartItemCode).trim() === String(exchangeItemCode).trim()
+        })
+
+        if (!hasMatchingCode) {
+          // Show Alert
+          setExchangeValidationAlertOpen(true)
+          // Do not allow selection? Or allow but warn?
+          // User request: "pedi ao cliente para escolher a forma de pagamento: credito de peça devolvida"
+          // Blocking selection seems appropriate to enforce the rule.
+          return
+        }
+      }
+    }
+
     setSelectedExchangeItems(prev => {
       if (prev.includes(itemId)) {
         return prev.filter(id => id !== itemId)
@@ -298,71 +332,51 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
+    let isValid = true
 
     console.log("[v0] Validating form data:", formData)
 
     if (!formData.customerDetails.nome.trim()) {
       newErrors.nome = "Nome é obrigatório"
-      console.log("[v0] Validation failed: nome is empty")
+      isValid = false
     }
 
     if (!formData.customerDetails.telefone.trim()) {
       newErrors.telefone = "Telefone é obrigatório"
-      console.log("[v0] Validation failed: telefone is empty")
+      isValid = false
     }
 
     if (formData.deliveryMethod === "delivery") {
-      if (!formData.customerDetails.endereco.rua.trim()) {
-        newErrors.rua = "Rua é obrigatória"
-      }
-
-      if (!formData.customerDetails.endereco.numero.trim()) {
-        newErrors.numero = "Número é obrigatório"
-      }
-
-      if (!formData.customerDetails.endereco.bairro.trim()) {
-        newErrors.bairro = "Bairro é obrigatório"
-      }
-
-      if (!formData.customerDetails.endereco.cidade.trim()) {
-        newErrors.cidade = "Cidade é obrigatória"
-      }
-
-      if (!formData.customerDetails.endereco.cep.trim()) {
-        newErrors.cep = "CEP é obrigatório"
-      } else if (!validateCEP(formData.customerDetails.endereco.cep)) {
-        newErrors.cep = "CEP inválido"
-      }
-
-      if (!formData.customerDetails.endereco.estado.trim()) {
-        newErrors.estado = "Estado é obrigatório"
-      }
+      if (!formData.customerDetails.endereco.cep) { newErrors.cep = "CEP é obrigatório"; isValid = false }
+      else if (!validateCEP(formData.customerDetails.endereco.cep)) { newErrors.cep = "CEP inválido"; isValid = false }
+      if (!formData.customerDetails.endereco.rua) { newErrors.rua = "Rua é obrigatória"; isValid = false }
+      if (!formData.customerDetails.endereco.numero) { newErrors.numero = "Número é obrigatório"; isValid = false }
+      if (!formData.customerDetails.endereco.bairro) { newErrors.bairro = "Bairro é obrigatório"; isValid = false }
+      if (!formData.customerDetails.endereco.cidade) { newErrors.cidade = "Cidade é obrigatória"; isValid = false }
+      if (!formData.customerDetails.endereco.estado) { newErrors.estado = "Estado é obrigatório"; isValid = false }
     }
 
     if (formData.deliveryMethod === "topiqueiro") {
+      const isOthers = formData.selectedCarrierId === "others"
+      const isCarrierNotFound = carriers.find(c => c.id === formData.selectedCarrierId)?.nome.toLowerCase() === "não encontrado"
+
       if (!formData.selectedCarrierId) {
         newErrors.selectedCarrierId = "Selecione um topiqueiro"
-      } else {
-        const isOthers = formData.selectedCarrierId === "others"
-        const isCarrierNotFound = carriers.find(c => c.id === formData.selectedCarrierId)?.nome.toLowerCase() === "não encontrado"
-
-        if (isOthers || isCarrierNotFound) {
-          if (!formData.topiqueiroName?.trim()) {
-            newErrors.topiqueiroName = "Nome do topiqueiro é obrigatório"
-          }
-          if (!formData.topiqueiroTime?.trim()) {
-            newErrors.topiqueiroTime = "Horário de saída é obrigatório"
-          }
-          if (!formData.topiqueiroPhone?.trim()) {
-            newErrors.topiqueiroPhone = "Telefone do topiqueiro é obrigatório"
-          }
+      } else if (isOthers || isCarrierNotFound) {
+        if (!formData.topiqueiroName?.trim()) {
+          newErrors.topiqueiroName = "Nome do topiqueiro é obrigatório"
+        }
+        if (!formData.topiqueiroTime?.trim()) {
+          newErrors.topiqueiroTime = "Horário de saída é obrigatório"
+        }
+        if (!formData.topiqueiroPhone?.trim()) {
+          newErrors.topiqueiroPhone = "Telefone do topiqueiro é obrigatório"
         }
       }
     }
 
     if (!formData.paymentMethod) {
       newErrors.paymentMethod = "Forma de pagamento é obrigatória"
-      console.log("[v0] Validation failed: paymentMethod is empty")
       console.log("[v0] Validation failed: paymentMethod is empty")
     }
 
@@ -416,8 +430,13 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
     console.log("[v0] Validation errors found:", newErrors)
     console.log("[v0] Validation result:", Object.keys(newErrors).length === 0)
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      setShowErrorModal(true)
+      return false
+    }
+
+    return true
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -611,8 +630,37 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
     "TO",
   ];
 
+
+
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Code Mismatch Alert */}
+      <AlertDialog open={exchangeValidationAlertOpen} onOpenChange={setExchangeValidationAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-warning">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Código Diferente Detectado
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>A peça selecionada para troca possui um código diferente dos produtos no seu carrinho atual.</p>
+              <p className="font-semibold text-foreground">
+                Por favor, utilize a forma de pagamento <span className="text-primary">"Crédito Peça Devolvida"</span>.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setExchangeValidationAlertOpen(false)
+              // Optionally auto-switch payment method?
+              // setFormData(prev => ({...prev, paymentMethod: "Credito Peça Devolvida"}))
+            }}>
+              Entendido
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="outline" onClick={onBack}>
@@ -768,13 +816,16 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="topiqueiroTime">Horário de Saída *</Label>
-                          <Input
-                            id="topiqueiroTime"
-                            type="time"
-                            value={formData.topiqueiroTime}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, topiqueiroTime: e.target.value }))}
-                            className={errors.topiqueiroTime ? "border-destructive" : ""}
-                          />
+                          <div className="relative">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="topiqueiroTime"
+                              type="time"
+                              value={formData.topiqueiroTime}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, topiqueiroTime: e.target.value }))}
+                              className={`pl-9 ${errors.topiqueiroTime ? "border-destructive" : ""}`}
+                            />
+                          </div>
                           {errors.topiqueiroTime && (
                             <p className="text-sm text-destructive">{errors.topiqueiroTime}</p>
                           )}
@@ -1343,6 +1394,29 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setShowStoreClosedModal(false)}>Entendi</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Submission Error Modal */}
+      <AlertDialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Dados Incompletos
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Existem campos obrigatórios não preenchidos no formulário. Por favor, verifique os campos em vermelho e tente novamente.
+              {formData.deliveryMethod === "delivery" && (
+                <p className="mt-2 text-xs text-muted-foreground">Verifique se todos os dados do endereço (CEP, Rua, Número, Bairro, Cidade, Estado) estão preenchidos.</p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowErrorModal(false)}>
+              Entendi
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

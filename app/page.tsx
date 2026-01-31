@@ -397,6 +397,7 @@ Obrigado pela preferência!
             onSubmit={handleSubmitOrder}
             onBack={handleBackToQuote}
             paymentMethods={paymentMethods}
+            cartItems={quoteItems}
           />
         )}
 

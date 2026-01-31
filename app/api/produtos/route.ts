@@ -7,10 +7,33 @@ const SECRET_ACCESS_TOKEN = process.env.SECRET_ACCESS_TOKEN || ""
 const PRODUCTS_PER_PAGE = 100
 
 // Helper to filter available products
+// Helper to filter available products
 function filterAvailableProducts(products: any[]) {
+  const blockedCategories = ["Insumos", "Mercadoria", "Conector", "Gaveta", "Insumoo", "Placa", "Slot", "Insumo"]
+
   return products.filter((product) => {
+    // Check if product is available
     const stock = Number.parseFloat(product.estoque || product.estoque_atual || "0")
-    return !isNaN(stock) && stock > 0
+    if (isNaN(stock) || stock <= 0) return false
+
+    // Check if product belongs to blocked category
+    // Using simple includes check as per implementation plan
+    if (product.nome_grupo && blockedCategories.some(blocked => product.nome_grupo.toLowerCase().includes(blocked.toLowerCase()))) {
+      return false
+    }
+
+    return true
+  })
+}
+
+// Function to just filter blocked categories regardless of availability setting
+function filterBlockedProducts(products: any[]) {
+  const blockedCategories = ["Insumos", "Mercadoria", "Conector", "Gaveta", "Insumoo", "Placa", "Slot", "Insumo"]
+  return products.filter(product => {
+    if (product.nome_grupo && blockedCategories.some(blocked => product.nome_grupo.toLowerCase().includes(blocked.toLowerCase()))) {
+      return false
+    }
+    return true
   })
 }
 
@@ -67,8 +90,14 @@ async function fetchProductsPage(
     // 1. Filter by availability if requested
     // Note: This reduces the page size if items are filtered out,
     // but ensures we don't show out-of-stock items.
+    // 1. Filter by availability if requested
+    // Note: This reduces the page size if items are filtered out,
+    // but ensures we don't show out-of-stock items.
     if (onlyAvailable) {
       products = filterAvailableProducts(products)
+    } else {
+      // Always filter blocked categories
+      products = filterBlockedProducts(products)
     }
 
     // Try to find total count from upstream response
