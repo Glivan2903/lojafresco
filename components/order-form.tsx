@@ -231,7 +231,7 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
 
 
   useEffect(() => {
-    if (formData.paymentMethod === "Troca" && customer.id) {
+    if ((formData.paymentMethod === "Troca" || formData.paymentMethod === "Credito Peça Devolvida") && customer.id) {
       setIsLoadingOrders(true)
       betelAPI.getCustomerSales(customer.id)
         .then(orders => {
@@ -271,6 +271,12 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
   }
 
   const handleToggleExchangeItem = (itemId: string) => {
+    if (formData.paymentMethod === "Credito Peça Devolvida") {
+      // Single selection for this mode
+      setSelectedExchangeItems([itemId])
+      return
+    }
+
     setSelectedExchangeItems(prev => {
       if (prev.includes(itemId)) {
         return prev.filter(id => id !== itemId)
@@ -369,10 +375,13 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
     }
 
     if (formData.paymentMethod === "Credito Peça Devolvida") {
-      if (!returnedItemName.trim()) newErrors.returnedItemName = "Nome da peça é obrigatório"
+      if (!exchangeOrder) {
+        newErrors.exchangeOrder = "Selecione o pedido original da peça"
+      } else if (selectedExchangeItems.length === 0) {
+        newErrors.exchangeItems = "Selecione a peça devolvida"
+      }
+
       if (!returnedItemCondition.trim()) newErrors.returnedItemCondition = "Estado da peça é obrigatório"
-      if (!returnedItemDate.trim()) newErrors.returnedItemDate = "Data da compra é obrigatória"
-      if (!returnedItemValue.trim()) newErrors.returnedItemValue = "Valor é obrigatório"
     }
 
     if (!formData.deliveryDate) {
@@ -448,12 +457,18 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
         }
       }
 
-      if (formData.paymentMethod === "Credito Peça Devolvida") {
-        dataToSubmit.returnedItemDetails = {
-          name: returnedItemName,
-          condition: returnedItemCondition,
-          purchaseDate: returnedItemDate,
-          value: returnedItemValue
+      if (formData.paymentMethod === "Credito Peça Devolvida" && exchangeOrder) {
+        const itemId = selectedExchangeItems[0]
+        const selectedItem = exchangeOrder.produtos?.find((item: any) => getItemId(item) === itemId)
+
+        if (selectedItem) {
+          dataToSubmit.returnedItemDetails = {
+            name: selectedItem.produto?.nome_produto || selectedItem.nome_produto || "Peça Devolvida",
+            condition: returnedItemCondition,
+            purchaseDate: exchangeOrder.data_criacao || exchangeOrder.data || new Date().toISOString().split("T")[0], // Fallback if no date
+            value: selectedItem.produto?.valor_venda || selectedItem.valor_venda || "0",
+            returnedItemValue: selectedItem.produto?.valor_venda || selectedItem.valor_venda || "0"
+          }
         }
       }
 
@@ -979,63 +994,90 @@ export function OrderForm({ customer, total, onSubmit, onBack, paymentMethods }:
                     </div>
                   )}
 
-                  {/* Returned Item Credit Flow */}
+                  {/* Returned Item Credit Flow - REFACTORED */}
                   {formData.paymentMethod === "Credito Peça Devolvida" && (
                     <div className="mt-4 pt-4 border-t space-y-4 animate-in fade-in slide-in-from-top-4">
-                      <h3 className="font-medium flex items-center gap-2">
-                        <Package className="w-4 h-4" />
-                        Detalhes da Peça Devolvida
-                      </h3>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="returnedItemName">Nome da Peça *</Label>
-                          <Input
-                            id="returnedItemName"
-                            value={returnedItemName}
-                            onChange={(e) => setReturnedItemName(e.target.value)}
-                            placeholder="Ex: Placa mãe iPhone X"
-                            className={errors.returnedItemName ? "border-destructive" : ""}
-                          />
-                          {errors.returnedItemName && <p className="text-sm text-destructive">{errors.returnedItemName}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="returnedItemCondition">Estado da Peça *</Label>
-                          <Input
-                            id="returnedItemCondition"
-                            value={returnedItemCondition}
-                            onChange={(e) => setReturnedItemCondition(e.target.value)}
-                            placeholder="Ex: Usada, Com defeito, Nova"
-                            className={errors.returnedItemCondition ? "border-destructive" : ""}
-                          />
-                          {errors.returnedItemCondition && <p className="text-sm text-destructive">{errors.returnedItemCondition}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="returnedItemDate">Data da Compra *</Label>
-                          <Input
-                            id="returnedItemDate"
-                            type="date"
-                            value={returnedItemDate}
-                            onChange={(e) => setReturnedItemDate(e.target.value)}
-                            className={errors.returnedItemDate ? "border-destructive" : ""}
-                          />
-                          {errors.returnedItemDate && <p className="text-sm text-destructive">{errors.returnedItemDate}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="returnedItemValue">Valor *</Label>
-                          <Input
-                            id="returnedItemValue"
-                            value={returnedItemValue}
-                            onChange={(e) => setReturnedItemValue(e.target.value)}
-                            placeholder="R$ 0,00"
-                            className={errors.returnedItemValue ? "border-destructive" : ""}
-                          />
-                          {errors.returnedItemValue && <p className="text-sm text-destructive">{errors.returnedItemValue}</p>}
-                        </div>
+                      <div className="space-y-2">
+                        <Label>Selecione o Pedido Original</Label>
+                        {isLoadingOrders ? (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Carregando pedidos...
+                          </div>
+                        ) : (
+                          <Select
+                            value={exchangeOrderId}
+                            onValueChange={handleSelectOrder}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um pedido..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {customerOrders.length > 0 ? (
+                                customerOrders.map((order) => (
+                                  <SelectItem key={order.id} value={order.id}>
+                                    Pedido #{order.codigo || order.numero || order.id} - {formatDateDisplay(order.data_criacao || order.data)} - {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.total || order.valor_total || 0)}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="none" disabled>Nenhum pedido encontrado</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {errors.exchangeOrder && <p className="text-sm text-destructive">{errors.exchangeOrder}</p>}
                       </div>
+
+                      {isSearchingOrder && (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        </div>
+                      )}
+
+                      {exchangeOrder && !isSearchingOrder && (
+                        <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                          <div className="flex items-center gap-2 font-medium">
+                            <Package className="w-4 h-4" />
+                            <span>Selecione a Peça Devolvida</span>
+                          </div>
+
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {exchangeOrder.produtos?.map((item: any, index: number) => {
+                              const itemId = getItemId(item) || `index-${index}`
+                              return (
+                                <div key={itemId} className="flex items-start gap-2 p-2 bg-background rounded border">
+                                  <Checkbox
+                                    id={`returned-item-${itemId}`}
+                                    checked={selectedExchangeItems.includes(itemId)}
+                                    onCheckedChange={() => handleToggleExchangeItem(itemId)}
+                                  />
+                                  <div className="space-y-1">
+                                    <Label htmlFor={`returned-item-${itemId}`} className="font-medium cursor-pointer">
+                                      {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                      Valor: {formatPrice(Number(item.produto?.valor_venda || item.valor_venda || 0))}
+                                    </p>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          {errors.exchangeItems && <p className="text-sm text-destructive">{errors.exchangeItems}</p>}
+
+                          <div className="space-y-2">
+                            <Label htmlFor="returnedItemCondition">Estado da Peça *</Label>
+                            <Input
+                              id="returnedItemCondition"
+                              value={returnedItemCondition}
+                              onChange={(e) => setReturnedItemCondition(e.target.value)}
+                              placeholder="Ex: Usada, Com defeito, Nova"
+                              className={errors.returnedItemCondition ? "border-destructive" : ""}
+                            />
+                            {errors.returnedItemCondition && <p className="text-sm text-destructive">{errors.returnedItemCondition}</p>}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
