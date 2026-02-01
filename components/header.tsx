@@ -53,7 +53,7 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLog
               <span className="hidden sm:inline">Débitos</span>
             </Button>
 
-            <Button variant="outline" onClick={() => setShowReturns(true)} className="bg-transparent text-primary border-primary/20 hover:bg-primary/5">
+            <Button variant="outline" onClick={() => setShowReturns(true)} className="bg-transparent">
               <RotateCcw className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Devolução de Peças</span>
             </Button>
