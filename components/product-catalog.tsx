@@ -50,7 +50,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 1000)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [onlyAvailable, setOnlyAvailable] = useState(false)
   const [productQuantities, setProductQuantities] = useState<Record<string, number>>({})
