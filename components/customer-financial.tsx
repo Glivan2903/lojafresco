@@ -148,13 +148,13 @@ export function CustomerFinancial({ customer, isOpen, onClose }: CustomerFinanci
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-transparent border-none shadow-none [&>button]:hidden">
                 <Card className="w-full h-full overflow-hidden flex flex-col border border-primary">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 pt-6 border-b bg-muted/20 relative">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 border-b bg-muted/20 relative">
 
                         <div className="w-8"></div> {/* Spacer */}
 
                         <div className="flex flex-col items-center flex-1 justify-center md:flex-none md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
                             <div className="flex items-center gap-2">
-                                <CardTitle className="text-xl font-bold text-center">{selectedReceivable ? "Detalhes do Débito" : "Débitos"}</CardTitle>
+                                <CardTitle className="text-lg font-bold text-center">{selectedReceivable ? "Detalhes do Débito" : "Débitos"}</CardTitle>
                             </div>
                             {!selectedReceivable && <p className="text-xs text-muted-foreground text-center">Contas a Pagar (Em Aberto)</p>}
                         </div>
@@ -178,11 +178,11 @@ export function CustomerFinancial({ customer, isOpen, onClose }: CustomerFinanci
                         </div>
                     </CardHeader>
 
-                    <CardContent className="flex-1 overflow-y-auto max-h-[60vh] p-4 md:p-6 bg-background/50 pr-2">
+                    <CardContent className="flex-1 overflow-y-auto max-h-[60vh] p-3 md:p-4 bg-background/50 pr-2">
                         {selectedReceivable ? (
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 <Card>
-                                    <CardContent className="p-4">
+                                    <CardContent className="p-3">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
                                                 <h3 className="font-semibold text-lg">{formatCurrency(selectedReceivable.valor_total || selectedReceivable.valor)}</h3>

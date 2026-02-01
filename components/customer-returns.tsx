@@ -247,36 +247,34 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
 
     // Dynamic Reasons
     const getReasons = () => {
-        const getReasons = () => {
-            if (situationType === "Boa") {
-                return [
-                    "Cliente desistiu",
-                    "Qualidade contestada pelo cliente",
-                    "Compra de modelo incorreto",
-                    "Envio incorreto",
-                    "Problema na placa do aparelho",
-                    "Versão",
-                    "Outros"
-                ]
-            }
-            if (situationType === "Ruim") {
-                return ["Touch ruim", "Imagem ruim", "Não Carrega", "Tampa não encaixa", "Outros"]
-            }
-            return []
+        if (situationType === "Boa") {
+            return [
+                "Cliente desistiu",
+                "Qualidade contestada pelo cliente",
+                "Compra de modelo incorreto",
+                "Envio incorreto",
+                "Problema na placa do aparelho",
+                "Versão",
+                "Outros"
+            ]
+        }
+        if (situationType === "Ruim") {
+            return ["Touch ruim", "Imagem ruim", "Não Carrega", "Tampa não encaixa", "Outros"]
         }
         return []
     }
+
 
     if (!isOpen) return null
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-primary">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 pt-6 shrink-0 relative">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 shrink-0 relative">
                     <div className="w-8"></div> {/* Spacer */}
 
                     <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
-                        <CardTitle className="text-xl font-bold text-center">
+                        <CardTitle className="text-lg font-bold text-center">
                             {selectedOrder ? "Solicitar Devolução" : "Selecione um Pedido"}
                         </CardTitle>
                     </div>
@@ -302,9 +300,9 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
                     </div>
                 </CardHeader>
 
-                <CardContent className="overflow-y-auto flex-1 pt-6">
+                <CardContent className="overflow-y-auto flex-1 pt-2">
                     {selectedOrder ? (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             {detailLoading && (
                                 <div className="flex justify-center py-8">
                                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -349,7 +347,7 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
                                                         <div
                                                             key={index}
                                                             className={`
-                                            p-3 rounded-lg border-2 cursor-pointer transition-all
+                                            p-2 rounded-lg border-2 cursor-pointer transition-all
                                             ${isSelected ? "border-primary bg-primary/5" : "border-transparent bg-muted hover:bg-muted/80"}
                                         `}
                                                             onClick={() => {
@@ -401,11 +399,11 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
                                                         }}
                                                         className="flex gap-4"
                                                     >
-                                                        <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                        <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
                                                             <RadioGroupItem value="Boa" id="sit-boa" />
                                                             <Label htmlFor="sit-boa" className="cursor-pointer w-full font-medium">Boa (Sem avarias)</Label>
                                                         </div>
-                                                        <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                        <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
                                                             <RadioGroupItem value="Ruim" id="sit-ruim" />
                                                             <Label htmlFor="sit-ruim" className="cursor-pointer w-full font-medium">Ruim (Com defeito/avaria)</Label>
                                                         </div>
@@ -423,11 +421,11 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
                                                             }}
                                                             className="flex gap-4"
                                                         >
-                                                            <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                            <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
                                                                 <RadioGroupItem value="Nova" id="cond-nova" />
                                                                 <Label htmlFor="cond-nova" className="cursor-pointer w-full font-medium">Nova</Label>
                                                             </div>
-                                                            <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                            <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
                                                                 <RadioGroupItem value="Usada" id="cond-usada" />
                                                                 <Label htmlFor="cond-usada" className="cursor-pointer w-full font-medium">Usada</Label>
                                                             </div>

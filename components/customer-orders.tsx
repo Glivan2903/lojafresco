@@ -168,13 +168,13 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-4xl max-h-[80vh] overflow-hidden border border-primary">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 pt-6 relative">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 relative">
 
           {/* Placeholder for centering */}
           <div className="w-8"></div>
 
           <div className="flex items-center gap-2 flex-1 justify-center md:flex-none md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
-            <CardTitle className="text-xl font-bold text-center">
+            <CardTitle className="text-lg font-bold text-center">
               {selectedOrder ? "Detalhes do Pedido" : "Consultar Pedidos"}
             </CardTitle>
           </div>
@@ -210,9 +210,9 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
 
               {!detailLoading && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Card>
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <h3 className="font-semibold mb-2">Informações do Pedido</h3>
                         <div className="space-y-2 text-sm">
                           <p>
@@ -239,7 +239,7 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
                     </Card>
 
                     <Card>
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <h3 className="font-semibold mb-2">Cliente</h3>
                         <div className="space-y-2 text-sm">
                           <p>
@@ -262,11 +262,11 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
 
                   {selectedOrder.produtos && selectedOrder.produtos.length > 0 && (
                     <Card>
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <h3 className="font-semibold mb-4">Produtos ({selectedOrder.produtos.length} itens)</h3>
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {selectedOrder.produtos.map((item, index) => (
-                            <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                            <div key={index} className="flex justify-between items-center p-2 bg-muted rounded-lg">
                               <div className="flex-1">
                                 <p className="font-medium">{item.produto.nome_produto}</p>
                                 <p className="text-sm text-muted-foreground">
@@ -286,7 +286,7 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
 
                   {selectedOrder.observacoes && (
                     <Card>
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <h3 className="font-semibold mb-2">Observações</h3>
                         <p className="text-sm">{selectedOrder.observacoes}</p>
                       </CardContent>
