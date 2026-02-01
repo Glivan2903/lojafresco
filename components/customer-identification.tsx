@@ -50,7 +50,9 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
   const [showAccountPending, setShowAccountPending] = useState(false)
   const [documentType, setDocumentType] = useState<"cpf" | "cnpj">("cpf")
   const [showPassword, setShowPassword] = useState(false)
+
   const [showWarningModal, setShowWarningModal] = useState(false)
+  const [showIncompleteAddressModal, setShowIncompleteAddressModal] = useState(false)
 
 
 
@@ -153,6 +155,27 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
           if (existingCustomer.ativo === "0") {
             setShowInactiveAccount(true)
           } else {
+            // Verify Address Completeness
+            // Verify Address Completeness
+            let addr = existingCustomer.endereco
+
+            // Check if address is in array format from API
+            if ((!addr || !addr.rua) && existingCustomer.enderecos && existingCustomer.enderecos.length > 0) {
+              console.log("[Address Check] Using address from array:", existingCustomer.enderecos[0].endereco)
+              addr = existingCustomer.enderecos[0].endereco
+            }
+
+            // Normalization: map API fields to internal fields if needed
+            const rua = addr?.rua || addr?.logradouro
+            const cidade = addr?.cidade || addr?.nome_cidade
+
+            console.log("[Address Check] Details:", { addr, rua, numero: addr?.numero, bairro: addr?.bairro, cidade, estado: addr?.estado })
+
+            if (!addr || !rua || !addr.numero || !addr.bairro || !cidade || !addr.estado) {
+              console.log("[Address Check] Address incomplete, showing modal")
+              setShowIncompleteAddressModal(true)
+              return
+            }
             onCustomerIdentified(existingCustomer)
           }
           return
@@ -436,6 +459,34 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
           </AlertDialogContent>
         </AlertDialog>
 
+        <AlertDialog open={showIncompleteAddressModal} onOpenChange={setShowIncompleteAddressModal}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center justify-center gap-2 text-warning">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                Atualização Necessária
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2 text-center">
+                <p>Identificamos que seu cadastro está incompleto (faltam dados de endereço).</p>
+                <p>Para sua segurança e para realizarmos a entrega, precisamos que você atualize seus dados.</p>
+                <p className="mt-2">Entre em contato pelo nosso WhatsApp:</p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col gap-2 sm:flex-row justify-center">
+              <AlertDialogCancel onClick={() => setShowIncompleteAddressModal(false)}>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold"
+                onClick={() => window.open(
+                  `https://wa.me/5588988638990?text=${encodeURIComponent("Olá, estou tentando fazer login mas meu cadastro está incompleto (endereço). Poderia me ajudar?")}`,
+                  "_blank"
+                )}
+              >
+                Atualizar Cadastro
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <AnimatedBackground />
 
         <Card className="w-full max-w-md shadow-2xl border-0 bg-[#E5E5E5] rounded-xl overflow-hidden">
@@ -649,6 +700,34 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               })
               setShowRegistration(true)
             }}>Entendi</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showIncompleteAddressModal} onOpenChange={setShowIncompleteAddressModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center justify-center gap-2 text-warning">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Atualização Necessária
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-center">
+              <p>Identificamos que seu cadastro está incompleto (faltam dados de endereço).</p>
+              <p>Para sua segurança e para realizarmos a entrega, precisamos que você atualize seus dados.</p>
+              <p className="mt-2">Entre em contato pelo nosso WhatsApp:</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row justify-center">
+            <AlertDialogCancel onClick={() => setShowIncompleteAddressModal(false)}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold"
+              onClick={() => window.open(
+                `https://wa.me/5588988638990?text=${encodeURIComponent("Olá, estou tentando fazer login mas meu cadastro está incompleto (endereço). Poderia me ajudar?")}`,
+                "_blank"
+              )}
+            >
+              Atualizar Cadastro
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

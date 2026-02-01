@@ -288,6 +288,7 @@ export function OrderForm(props: OrderFormProps) {
                 if (fullProduct) {
                   const foundCode = fullProduct.codigo || fullProduct.codigo_interno
                   if (foundCode) {
+                    console.log(`[v0-enrich] Found code ${foundCode} for product ${prodId}`)
                     if (item.produto) {
                       item.produto.codigo = foundCode
                       item.produto.codigo_interno = fullProduct.codigo_interno
@@ -295,14 +296,19 @@ export function OrderForm(props: OrderFormProps) {
                       item.codigo = foundCode
                       item.codigo_interno = fullProduct.codigo_interno
                     }
+                  } else {
+                    console.log(`[v0-enrich] No code found in product details for ${prodId}`)
                   }
                 }
               } catch (e) {
                 console.error("Error fetching product details:", e)
               }
+            } else {
+              console.log(`[v0-enrich] Product ${prodId} already has code: ${currentCode}`)
             }
             return item
           }))
+          console.log("[v0-enrich] Final enriched items:", enrichedProducts)
           order.produtos = enrichedProducts
         }
 
@@ -546,10 +552,17 @@ export function OrderForm(props: OrderFormProps) {
             ?.filter((item: any) => selectedExchangeItems.includes(getItemId(item)))
             .map((item: any) => {
               const safeProd = item.produto || item
-              const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia || "No Code"
+              const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia
+
+              console.log("[v0-submit-troca] Processing item:", item)
+              console.log("[v0-submit-troca] SafeProd:", safeProd)
+              console.log("[v0-submit-troca] Found Code:", code)
+
+              const finalCode = code || "No Code"
+
               return {
                 id: getItemId(item),
-                code: code,
+                code: finalCode,
                 name: item.produto?.nome_produto || item.nome_produto || "Unknown Product"
               }
             }) || [],
@@ -565,6 +578,10 @@ export function OrderForm(props: OrderFormProps) {
         if (selectedItem) {
           const safeProd = selectedItem.produto || selectedItem
           const itemCode = safeProd.codigo || safeProd.codigo_interno || selectedItem.codigo || safeProd.referencia || "No Code"
+
+          console.log("[v0-submit] Selected Item for Credit:", selectedItem)
+          console.log("[v0-submit] Safe Prod:", safeProd)
+          console.log("[v0-submit] Resolved Item Code:", itemCode)
 
           const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
           const difference = itemValue - total

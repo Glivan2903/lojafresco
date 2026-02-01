@@ -47,7 +47,20 @@ export interface Customer {
   tipo_pessoa: "F" | "J"
   data_nascimento?: string // Added data_nascimento field
   ativo?: string // "1" for active, "0" for inactive
-  endereco?: {
+  enderecos?: {
+    endereco: {
+      rua?: string
+      logradouro?: string // Added logradouro as alias for rua
+      numero?: string
+      complemento?: string
+      bairro?: string
+      cidade?: string
+      nome_cidade?: string // Added nome_cidade
+      cep?: string
+      estado?: string
+    }
+  }[]
+  endereco?: { // Keeping for backward compatibility or internal usage if flattening happens
     rua?: string
     numero?: string
     complemento?: string
@@ -331,6 +344,7 @@ class BetelAPI {
           tipo_pessoa: customerData.tipo_pessoa === "PF" ? "F" : "J",
           ativo: customerData.ativo,
           endereco: {},
+          enderecos: customerData.enderecos || [],
         }
 
         // Map address if available
@@ -749,11 +763,32 @@ class BetelAPI {
 
   async getProduct(productId: string): Promise<Product | null> {
     try {
-      const response = await this.request(`/produtos/${productId}`)
-      // Response might be a single object or array depending on API
-      if (Array.isArray(response) && response.length > 0) return response[0]
-      if (response && response.data) return response.data
-      return response
+      // Try direct ID endpoint first
+      try {
+        const response = await this.request(`/produtos/${productId}`)
+        if (Array.isArray(response) && response.length > 0) return response[0]
+        if (response && response.data) return response.data
+        if (response && response.id) return response
+      } catch (e) {
+        console.log(`[v0] Direct product fetch failed, trying search by filter: ${productId}`)
+      }
+
+      // Fallback: Try searching by parameter
+      // Some APIs use ?id= or ?q= or ?termo=
+      const searchResponse = await this.request(`/produtos?id=${productId}`)
+
+      let found = null
+      if (Array.isArray(searchResponse) && searchResponse.length > 0) found = searchResponse[0]
+      else if (searchResponse && searchResponse.data && Array.isArray(searchResponse.data)) {
+        found = searchResponse.data.find((p: any) => String(p.id) === String(productId) || String(p.produto_id) === String(productId))
+        // If exact match not found in data array, take first if it looks right? 
+        // Safe to just take first if unique ID search.
+        if (!found && searchResponse.data.length === 1) found = searchResponse.data[0]
+      }
+
+      if (found) return found
+
+      return null
     } catch (error) {
       console.error(`Failed to load product ${productId}:`, error)
       return null
