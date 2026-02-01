@@ -167,25 +167,32 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-4xl max-h-[80vh] overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="flex items-center gap-2">
-            {selectedOrder && (
-              <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)}>
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            )}
-            <CardTitle className="text-xl font-bold">
+      <Card className="w-full max-w-4xl max-h-[80vh] overflow-hidden border border-primary">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative">
+
+          {/* Placeholder for centering */}
+          <div className="w-8"></div>
+
+          <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
+            <CardTitle className="text-xl font-bold text-center">
               {selectedOrder ? "Detalhes do Pedido" : "Consultar Pedidos"}
             </CardTitle>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={fetchOrders} disabled={loading} title="Atualizar">
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="w-4 h-4" />
-            </Button>
+
+          <div className="flex items-center gap-2 z-10">
+            {selectedOrder && (
+              <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)} className="absolute left-4">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            )}
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={fetchOrders} disabled={loading} title="Atualizar">
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
 

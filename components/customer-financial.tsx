@@ -147,22 +147,29 @@ export function CustomerFinancial({ customer, isOpen, onClose }: CustomerFinanci
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-transparent border-none shadow-none [&>button]:hidden">
-                <Card className="w-full h-full overflow-hidden flex flex-col">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b bg-muted/20">
-                        <div className="flex items-center gap-2">
+                <Card className="w-full h-full overflow-hidden flex flex-col border border-primary">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b bg-muted/20 relative">
+
+                        <div className="w-8"></div> {/* Spacer */}
+
+                        <div className="flex flex-col items-center absolute left-1/2 transform -translate-x-1/2">
+                            <div className="flex items-center gap-2">
+                                {!selectedReceivable && (
+                                    <div className="p-1 bg-primary/10 rounded-full">
+                                        <DollarSign className="w-4 h-4 text-primary" />
+                                    </div>
+                                )}
+                                <CardTitle className="text-xl font-bold text-center">{selectedReceivable ? "Detalhes do Débito" : "Débitos"}</CardTitle>
+                            </div>
+                            {!selectedReceivable && <p className="text-xs text-muted-foreground text-center">Contas a Pagar (Em Aberto)</p>}
+                        </div>
+
+                        <div className="flex items-center gap-2 z-10">
                             {selectedReceivable ? (
-                                <Button variant="ghost" size="sm" onClick={() => { setSelectedReceivable(null); setSelectedSale(null); }}>
+                                <Button variant="ghost" size="sm" onClick={() => { setSelectedReceivable(null); setSelectedSale(null); }} className="absolute left-4">
                                     <ArrowLeft className="w-4 h-4" />
                                 </Button>
-                            ) : (
-                                <div className="p-2 bg-primary/10 rounded-full">
-                                    <DollarSign className="w-5 h-5 text-primary" />
-                                </div>
-                            )}
-                            <div>
-                                <CardTitle className="text-xl font-bold">{selectedReceivable ? "Detalhes do Débito" : "Débitos"}</CardTitle>
-                                {!selectedReceivable && <p className="text-sm text-muted-foreground">Contas a Pagar (Em Aberto)</p>}
-                            </div>
+                            ) : null}
                         </div>
                         <div className="flex items-center gap-2">
                             {!selectedReceivable && (
