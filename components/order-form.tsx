@@ -1245,7 +1245,7 @@ export function OrderForm(props: OrderFormProps) {
 
                                     {returnAction === "refund" && (
                                       <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                        <Label htmlFor="refundPixKey">Chave PIX para Estorno *</Label>
+                                        <Label htmlFor="refundPixKey">Chave Pix para Estorno *</Label>
                                         <Input
                                           id="refundPixKey"
                                           value={refundPixKey}
