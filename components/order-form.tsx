@@ -63,7 +63,7 @@ export interface OrderData {
   observations?: string
   exchangeDetails?: {
     originalOrderId: string
-    selectedItems: Array<{ id: string; name: string }>
+    selectedItems: Array<{ id: string; name: string; code?: string }>
     reason: string
     description?: string
   }
@@ -504,13 +504,18 @@ export function OrderForm(props: OrderFormProps) {
       } */
       if (formData.paymentMethod === "Troca" && exchangeOrder) {
         dataToSubmit.exchangeDetails = {
-          originalOrderId: exchangeOrder.id || exchangeOrder.codigo || exchangeOrderId,
+          originalOrderId: exchangeOrder.codigo || exchangeOrder.id || exchangeOrderId,
           selectedItems: exchangeOrder.produtos
             ?.filter((item: any) => selectedExchangeItems.includes(getItemId(item)))
-            .map((item: any) => ({
-              id: getItemId(item),
-              name: item.produto?.nome_produto || item.nome_produto || "Unknown Product"
-            })) || [],
+            .map((item: any) => {
+              const safeProd = item.produto || item
+              const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia || "No Code"
+              return {
+                id: getItemId(item),
+                code: code,
+                name: item.produto?.nome_produto || item.nome_produto || "Unknown Product"
+              }
+            }) || [],
           reason: exchangeReason,
           description: exchangeReason === "Outros" ? exchangeDescription : undefined
         }
@@ -521,13 +526,16 @@ export function OrderForm(props: OrderFormProps) {
         const selectedItem = exchangeOrder.produtos?.find((item: any) => getItemId(item) === itemId)
 
         if (selectedItem) {
+          const safeProd = selectedItem.produto || selectedItem
+          const itemCode = safeProd.codigo || safeProd.codigo_interno || selectedItem.codigo || safeProd.referencia || "No Code"
+
           const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
           const difference = itemValue - total
           let observations = formData.observations || ""
 
           // Build Smart Observations
           observations += `\n\n--- DETALHES CRÉDITO PEÇA DEVOLVIDA ---\n`
-          observations += `Peça: ${selectedItem.produto?.nome_produto || selectedItem.nome_produto}\n`
+          observations += `Peça: ${itemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto}\n`
           observations += `Estado: ${returnedItemCondition}\n`
           observations += `Valor Peça Antiga: ${formatPrice(itemValue)}\n`
           observations += `Valor Nova Compra: ${formatPrice(total)}\n`
@@ -555,7 +563,7 @@ export function OrderForm(props: OrderFormProps) {
           dataToSubmit.observations = observations
 
           dataToSubmit.returnedItemDetails = {
-            name: selectedItem.produto?.nome_produto || selectedItem.nome_produto || "Peça Devolvida",
+            name: `${itemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto || "Peça Devolvida"}`,
             condition: returnedItemCondition,
             purchaseDate: exchangeOrder.data_criacao || exchangeOrder.data || new Date().toISOString().split("T")[0],
             value: String(itemValue),
@@ -1067,6 +1075,8 @@ export function OrderForm(props: OrderFormProps) {
                           <div className="space-y-2 max-h-60 overflow-y-auto">
                             {exchangeOrder.produtos?.map((item: any, index: number) => {
                               const itemId = getItemId(item) || `index-${index}`
+                              const safeProd = item.produto || item
+                              const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia || "-"
                               return (
                                 <div key={itemId} className="flex items-start gap-2 p-2 bg-background rounded border">
                                   <Checkbox
@@ -1076,6 +1086,7 @@ export function OrderForm(props: OrderFormProps) {
                                   />
                                   <div className="space-y-1">
                                     <Label htmlFor={`item-${itemId}`} className="font-medium cursor-pointer">
+                                      <span className="text-muted-foreground mr-1 text-xs">#{code}</span>
                                       {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
@@ -1168,6 +1179,8 @@ export function OrderForm(props: OrderFormProps) {
                           <div className="space-y-2 max-h-60 overflow-y-auto">
                             {exchangeOrder.produtos?.map((item: any, index: number) => {
                               const itemId = getItemId(item) || `index-${index}`
+                              const safeProd = item.produto || item
+                              const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia || "-"
                               return (
                                 <div key={itemId} className="flex items-start gap-2 p-2 bg-background rounded border">
                                   <Checkbox
@@ -1177,6 +1190,7 @@ export function OrderForm(props: OrderFormProps) {
                                   />
                                   <div className="space-y-1">
                                     <Label htmlFor={`returned-item-${itemId}`} className="font-medium cursor-pointer">
+                                      <span className="text-muted-foreground mr-1 text-xs">#{code}</span>
                                       {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
                                     </Label>
                                     <p className="text-xs text-muted-foreground">

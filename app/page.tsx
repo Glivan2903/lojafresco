@@ -213,7 +213,7 @@ DETALHES DA TROCA:
 Pedido Anterior: ${orderData.exchangeDetails.originalOrderId}
 Motivo: ${orderData.exchangeDetails.reason} ${orderData.exchangeDetails.description ? `(${orderData.exchangeDetails.description})` : ""}
 Itens para Troca:
-${orderData.exchangeDetails.selectedItems.map(item => `- ${item.name}`).join("\n")}
+${orderData.exchangeDetails.selectedItems.map(item => `- ${item.code ? item.code + " - " : ""}${item.name}`).join("\n")}
 ` : ""}
 
 ${orderData.returnedItemDetails ? `
