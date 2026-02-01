@@ -316,17 +316,16 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
     <div className="space-y-4 sm:space-y-6">
 
 
-      <div className="sticky top-16 z-30 bg-background pt-3 pb-3 relative -mx-4 px-4 sm:mx-0 sm:px-0 border-b shadow-sm">
-        <Search className="absolute left-0 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5 ml-4 sm:ml-0" />
-        <Input
-          placeholder="Buscar produtos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-12 border-yellow-400 focus-visible:ring-yellow-400 h-14 sm:h-16 text-lg sm:text-xl bg-background shadow-inner"
-        />
-      </div>
-
       <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Buscar produtos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 border-yellow-400 focus-visible:ring-yellow-400 h-12 text-lg"
+          />
+        </div>
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 overflow-x-auto pb-2">

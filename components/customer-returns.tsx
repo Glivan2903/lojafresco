@@ -90,6 +90,8 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
     const [situationType, setSituationType] = useState<"Boa" | "Ruim" | "">("")
     const [conditionType, setConditionType] = useState<"Nova" | "Usada" | "">("")
+    const [resolutionType, setResolutionType] = useState<"Credito" | "Pix" | "">("")
+    const [pixKey, setPixKey] = useState("")
     const [reason, setReason] = useState("")
     const [customReason, setCustomReason] = useState("")
     const [observation, setObservation] = useState("")
@@ -111,6 +113,8 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
         setSelectedItemId(null)
         setSituationType("")
         setConditionType("")
+        setResolutionType("")
+        setPixKey("")
         setReason("")
         setCustomReason("")
         setObservation("")
@@ -161,8 +165,10 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
         // Validation logic: Condition only needed if Situation is Boa
         const isConditionRequired = situationType === "Boa"
         const isConditionValid = !isConditionRequired || (isConditionRequired && conditionType)
+        const isPixKeyRequired = resolutionType === "Pix"
+        const isPixKeyValid = !isPixKeyRequired || (isPixKeyRequired && pixKey.trim())
 
-        if (!selectedOrder || !selectedItemId || !situationType || !isConditionValid || !reason || (reason === "Outros" && !customReason.trim())) {
+        if (!selectedOrder || !selectedItemId || !situationType || !isConditionValid || !reason || (reason === "Outros" && !customReason.trim()) || !resolutionType || !isPixKeyValid) {
             setError("Preencha todos os campos da devolução.")
             return
         }
@@ -194,14 +200,17 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
 *Item Devolvido:*
 Código: ${itemCode}
 Produto: ${itemName}
-Valor Original: ${formatCurrency(safeProd.valor_venda)}
 --------------------------------
 *Situação da Peça:* ${situationType === "Boa" ? "Boa (Sem avarias)" : "Ruim (Com defeito/avaria)"}
 ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
 *Motivo:* ${finalReason}
 *Observações:* ${observation || "Sem observações adicionais"}
 --------------------------------
-*Ação:* Aguardando análise para crédito ou estorno.
+*Forma de Reembolso:* ${resolutionType === "Pix" ? "Estorno via PIX" : "Crédito em Loja"}
+${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
+*Valor a Reembolsar:* ${formatCurrency(safeProd.valor_venda)}
+--------------------------------
+*Ação:* Aguardando análise para ${resolutionType === "Pix" ? "estorno" : "liberação de crédito"}.
 `
 
             console.log("[CustomerReturns] Opening WhatsApp with message:", message)
@@ -216,6 +225,8 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
             setSelectedItemId(null)
             setSituationType("")
             setConditionType("")
+            setResolutionType("")
+            setPixKey("")
             setReason("")
             setCustomReason("")
             setObservation("")
@@ -250,20 +261,25 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
         if (situationType === "Boa") {
             return [
                 "Cliente desistiu",
-                "Qualidade contestada pelo cliente",
                 "Compra de modelo incorreto",
                 "Envio incorreto",
                 "Problema na placa do aparelho",
+                "Qualidade contestada pelo cliente",
                 "Versão",
                 "Outros"
             ]
         }
         if (situationType === "Ruim") {
-            return ["Touch ruim", "Imagem ruim", "Não Carrega", "Tampa não encaixa", "Outros"]
+            return [
+                "Imagem ruim",
+                "Não Carrega",
+                "Tampa não encaixa",
+                "Touch ruim",
+                "Outros"
+            ]
         }
         return []
     }
-
 
     if (!isOpen) return null
 
@@ -433,8 +449,8 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
                                                     </div>
                                                 )}
 
-                                                {/* Reason Select - Only shows if condition is selected */}
-                                                {conditionType && (
+                                                {/* Reason Select - Shows if condition selected OR situation is Ruim */}
+                                                {(conditionType || situationType === "Ruim") && (
                                                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                                                         <Label htmlFor="reasonSelect">Motivo da Devolução *</Label>
                                                         <Select
@@ -482,6 +498,41 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
                                                     onChange={(e) => setObservation(e.target.value)}
                                                 />
                                             </div>
+
+                                            {/* Resolution Type Radio Group */}
+                                            <div className="space-y-2 pt-2 border-t">
+                                                <Label className="text-base">Como deseja receber o valor? *</Label>
+                                                <RadioGroup
+                                                    value={resolutionType}
+                                                    onValueChange={(val: "Credito" | "Pix") => {
+                                                        setResolutionType(val)
+                                                    }}
+                                                    className="flex gap-4"
+                                                >
+                                                    <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                        <RadioGroupItem value="Credito" id="res-credito" />
+                                                        <Label htmlFor="res-credito" className="cursor-pointer w-full font-medium">Crédito em Loja</Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                        <RadioGroupItem value="Pix" id="res-pix" />
+                                                        <Label htmlFor="res-pix" className="cursor-pointer w-full font-medium">Estorno via PIX</Label>
+                                                    </div>
+                                                </RadioGroup>
+                                            </div>
+
+                                            {/* Pix Key Input - Only shows if Pix is selected */}
+                                            {resolutionType === "Pix" && (
+                                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                    <Label htmlFor="pixKey">Chave PIX *</Label>
+                                                    <Input
+                                                        id="pixKey"
+                                                        placeholder="CPF, E-mail ou Telefone"
+                                                        value={pixKey}
+                                                        onChange={(e) => setPixKey(e.target.value)}
+                                                        className={error && !pixKey ? "border-destructive" : ""}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
