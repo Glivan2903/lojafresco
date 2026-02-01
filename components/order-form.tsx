@@ -18,7 +18,7 @@ import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Package, AlertTriangle, Bus, Bike, Clock } from "lucide-react"
+import { Search, Package, AlertTriangle, Bus, Bike, Clock, ChevronDown, ChevronUp } from "lucide-react"
 import { betelAPI } from "@/lib/api"
 import {
   AlertDialog,
@@ -131,7 +131,8 @@ export function OrderForm(props: OrderFormProps) {
 
   const [carriers, setCarriers] = useState<Carrier[]>([])
   const [showMotoUberModal, setShowMotoUberModal] = useState(false)
-  const [showStoreClosedModal, setShowStoreClosedModal] = useState(false) // New state
+  const [showStoreClosedModal, setShowStoreClosedModal] = useState(false)
+  const [isAddressExpanded, setIsAddressExpanded] = useState(false)
 
   useEffect(() => {
     betelAPI.getCarriers().then(setCarriers).catch(console.error)
@@ -913,109 +914,116 @@ export function OrderForm(props: OrderFormProps) {
 
                 {formData.deliveryMethod === "delivery" && (
                   <div className="space-y-4 pt-4 border-t">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-base font-semibold">Endereço de Entrega</Label>
+                    <div
+                      className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors -mx-2"
+                      onClick={() => setIsAddressExpanded(!isAddressExpanded)}
+                    >
+                      <Label className="text-base font-semibold cursor-pointer pointer-events-none">Endereço de Entrega</Label>
+                      {isAddressExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="cep">CEP *</Label>
-                        <div className="relative">
-                          <Input
-                            id="cep"
-                            placeholder="00000-000"
-                            value={formData.customerDetails.endereco.cep}
-                            onChange={(e) => handleCepChange(e.target.value)}
-                            className={errors.cep ? "border-destructive" : ""}
-                            maxLength={9}
-                          />
-                          {isLoadingCep && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            </div>
-                          )}
+                    {isAddressExpanded && (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="cep">CEP *</Label>
+                          <div className="relative">
+                            <Input
+                              id="cep"
+                              placeholder="00000-000"
+                              value={formData.customerDetails.endereco.cep}
+                              onChange={(e) => handleCepChange(e.target.value)}
+                              className={errors.cep ? "border-destructive" : ""}
+                              maxLength={9}
+                            />
+                            {isLoadingCep && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+                          {errors.cep && <p className="text-sm text-destructive">{errors.cep}</p>}
                         </div>
-                        {errors.cep && <p className="text-sm text-destructive">{errors.cep}</p>}
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-2 space-y-2">
-                          <Label htmlFor="rua">Rua *</Label>
-                          <Input
-                            id="rua"
-                            value={formData.customerDetails.endereco.rua}
-                            onChange={(e) => updateAddress("rua", e.target.value)}
-                            className={errors.rua ? "border-destructive" : ""}
-                          />
-                          {errors.rua && <p className="text-sm text-destructive">{errors.rua}</p>}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="rua">Rua *</Label>
+                            <Input
+                              id="rua"
+                              value={formData.customerDetails.endereco.rua}
+                              onChange={(e) => updateAddress("rua", e.target.value)}
+                              className={errors.rua ? "border-destructive" : ""}
+                            />
+                            {errors.rua && <p className="text-sm text-destructive">{errors.rua}</p>}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="numero">Número *</Label>
+                            <Input
+                              id="numero"
+                              value={formData.customerDetails.endereco.numero}
+                              onChange={(e) => updateAddress("numero", e.target.value)}
+                              className={errors.numero ? "border-destructive" : ""}
+                            />
+                            {errors.numero && <p className="text-sm text-destructive">{errors.numero}</p>}
+                          </div>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="numero">Número *</Label>
+                          <Label htmlFor="complemento">Complemento</Label>
                           <Input
-                            id="numero"
-                            value={formData.customerDetails.endereco.numero}
-                            onChange={(e) => updateAddress("numero", e.target.value)}
-                            className={errors.numero ? "border-destructive" : ""}
+                            id="complemento"
+                            placeholder="Apartamento, bloco, etc."
+                            value={formData.customerDetails.endereco.complemento}
+                            onChange={(e) => updateAddress("complemento", e.target.value)}
                           />
-                          {errors.numero && <p className="text-sm text-destructive">{errors.numero}</p>}
                         </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="complemento">Complemento</Label>
-                        <Input
-                          id="complemento"
-                          placeholder="Apartamento, bloco, etc."
-                          value={formData.customerDetails.endereco.complemento}
-                          onChange={(e) => updateAddress("complemento", e.target.value)}
-                        />
-                      </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="bairro">Bairro *</Label>
+                            <Input
+                              id="bairro"
+                              value={formData.customerDetails.endereco.bairro}
+                              onChange={(e) => updateAddress("bairro", e.target.value)}
+                              className={errors.bairro ? "border-destructive" : ""}
+                            />
+                            {errors.bairro && <p className="text-sm text-destructive">{errors.bairro}</p>}
+                          </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="cidade">Cidade *</Label>
+                            <Input
+                              id="cidade"
+                              value={formData.customerDetails.endereco.cidade}
+                              onChange={(e) => updateAddress("cidade", e.target.value)}
+                              className={errors.cidade ? "border-destructive" : ""}
+                            />
+                            {errors.cidade && <p className="text-sm text-destructive">{errors.cidade}</p>}
+                          </div>
+                        </div>
+
+
                         <div className="space-y-2">
-                          <Label htmlFor="bairro">Bairro *</Label>
-                          <Input
-                            id="bairro"
-                            value={formData.customerDetails.endereco.bairro}
-                            onChange={(e) => updateAddress("bairro", e.target.value)}
-                            className={errors.bairro ? "border-destructive" : ""}
-                          />
-                          {errors.bairro && <p className="text-sm text-destructive">{errors.bairro}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="cidade">Cidade *</Label>
-                          <Input
-                            id="cidade"
-                            value={formData.customerDetails.endereco.cidade}
-                            onChange={(e) => updateAddress("cidade", e.target.value)}
-                            className={errors.cidade ? "border-destructive" : ""}
-                          />
-                          {errors.cidade && <p className="text-sm text-destructive">{errors.cidade}</p>}
+                          <Label htmlFor="estado">Estado *</Label>
+                          <Select
+                            value={formData.customerDetails.endereco.estado}
+                            onValueChange={(value) => updateAddress("estado", value)}
+                          >
+                            <SelectTrigger className={errors.estado ? "border-destructive" : ""}>
+                              <SelectValue placeholder="Selecione o estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {estados.map((estado) => (
+                                <SelectItem key={estado} value={estado}>
+                                  {estado}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {errors.estado && <p className="text-sm text-destructive">{errors.estado}</p>}
                         </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="estado">Estado *</Label>
-                        <Select
-                          value={formData.customerDetails.endereco.estado}
-                          onValueChange={(value) => updateAddress("estado", value)}
-                        >
-                          <SelectTrigger className={errors.estado ? "border-destructive" : ""}>
-                            <SelectValue placeholder="Selecione o estado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {estados.map((estado) => (
-                              <SelectItem key={estado} value={estado}>
-                                {estado}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {errors.estado && <p className="text-sm text-destructive">{errors.estado}</p>}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </CardContent>
