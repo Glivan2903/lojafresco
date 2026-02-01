@@ -295,15 +295,30 @@ export function OrderForm(props: OrderFormProps) {
       if (item && cartItems && cartItems.length > 0) {
         // Get the code from the exchange item
         // The API structure for sales details seems to be nested in 'produto'
-        const exchangeItemCode = item.produto?.codigo || item.produto?.codigo_interno || item.codigo
+        // Helper to normalize
+        const normalize = (val: any) => String(val || "").trim().toLowerCase()
 
-        console.log("Validating exchange item code:", exchangeItemCode)
-        console.log("Cart items:", cartItems)
+        // Try multiple fields for code (robust access)
+        const safeExchangeProd = item.produto || item
+        const exchangeItemCode = normalize(safeExchangeProd.codigo || safeExchangeProd.codigo_interno || item.codigo || safeExchangeProd.referencia || "")
+        const exchangeItemId = safeExchangeProd.id || safeExchangeProd.produto_id
 
-        // Check if ANY item in the cart has a matching code
+        console.log(`[v0-debug] Validating exchange item. ID: ${itemId}, Code: '${exchangeItemCode}'`)
+
+        // Check if ANY item in the cart has a matching code OR matching ID
         const hasMatchingCode = cartItems.some(cartItem => {
-          const cartItemCode = cartItem.product.codigo_interno || cartItem.product.codigo
-          return cartItemCode && exchangeItemCode && String(cartItemCode).trim() === String(exchangeItemCode).trim()
+          const safeCartProd = cartItem.product || cartItem.produto || {}
+
+          const cartItemCode = normalize(safeCartProd.codigo_interno || safeCartProd.codigo || safeCartProd.referencia || "")
+          const cartItemId = safeCartProd.id || safeCartProd.produto_id
+
+          const codeMatch = exchangeItemCode && cartItemCode && exchangeItemCode === cartItemCode
+          const idMatch = exchangeItemId && cartItemId && String(exchangeItemId) === String(cartItemId)
+
+          if (codeMatch || idMatch) {
+            console.log(`[v0-debug] Match found! Cart Item: ${safeCartProd.nome}, CodeMatch: ${codeMatch}, IdMatch: ${idMatch}`)
+          }
+          return codeMatch || idMatch
         })
 
         if (!hasMatchingCode) {

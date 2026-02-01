@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/use-toast"
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -398,12 +399,13 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Atenção</AlertDialogTitle>
-              <AlertDialogDescription>
-                Se você já possui cadastro e não conseguiu realizar o login, entre em contato pelo whatsapp para cadastrar email e documento para poder acessar a loja para evitar duplicação de cadastro na base.
+              <AlertDialogDescription className="space-y-2">
+                <p>Identificamos que este CPF/CNPJ ou e-mail já possui cadastro.</p>
+                <p>Entre em contato pelo nosso WhatsApp para recuperar sua senha: 👉 <span className="font-bold">88 98863-8990</span></p>
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogAction onClick={() => {
+            <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+              <AlertDialogCancel onClick={() => {
                 setShowWarningModal(false)
                 setFormData({
                   email: "",
@@ -420,7 +422,13 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
                   data_nascimento: "",
                 })
                 setShowRegistration(true)
-              }}>Entendi</AlertDialogAction>
+              }}>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => window.open("https://wa.me/5588988638990", "_blank")}
+              >
+                Falar no WhatsApp
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
