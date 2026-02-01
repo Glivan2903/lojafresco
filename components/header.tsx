@@ -83,6 +83,16 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLog
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={() => setShowOrders(true)}
+                className="mr-1"
+                title="Meus Pedidos"
+              >
+                <FileText className="h-6 w-6" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={onViewQuote}
                 className="mr-1 relative"
               >
@@ -112,15 +122,6 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLog
                     </div>
                   </SheetHeader>
                   <div className="flex flex-col gap-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => { setShowOrders(true); setIsMenuOpen(false); }}
-                      className="justify-start"
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      Consultar Pedidos
-                    </Button>
-
                     <Button
                       variant="outline"
                       onClick={() => { setShowFinancial(true); setIsMenuOpen(false); }}

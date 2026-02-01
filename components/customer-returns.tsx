@@ -88,8 +88,8 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
 
     // Form State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
-    const [situationType, setSituationType] = useState<"Nova" | "Usada" | "">("")
-    const [conditionType, setConditionType] = useState<"Boa" | "Ruim" | "">("")
+    const [situationType, setSituationType] = useState<"Boa" | "Ruim" | "">("")
+    const [conditionType, setConditionType] = useState<"Nova" | "Usada" | "">("")
     const [reason, setReason] = useState("")
     const [customReason, setCustomReason] = useState("")
     const [observation, setObservation] = useState("")
@@ -158,7 +158,11 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
     const handleSubmitReturn = async () => {
         const finalReason = reason === "Outros" ? customReason : reason
 
-        if (!selectedOrder || !selectedItemId || !situationType || !conditionType || !reason || (reason === "Outros" && !customReason.trim())) {
+        // Validation logic: Condition only needed if Situation is Boa
+        const isConditionRequired = situationType === "Boa"
+        const isConditionValid = !isConditionRequired || (isConditionRequired && conditionType)
+
+        if (!selectedOrder || !selectedItemId || !situationType || !isConditionValid || !reason || (reason === "Outros" && !customReason.trim())) {
             setError("Preencha todos os campos da devolução.")
             return
         }
@@ -192,8 +196,8 @@ Código: ${itemCode}
 Produto: ${itemName}
 Valor Original: ${formatCurrency(safeProd.valor_venda)}
 --------------------------------
-*Situação da Peça:* ${situationType}
-*Condição da Peça:* ${conditionType}
+*Situação da Peça:* ${situationType === "Boa" ? "Boa (Sem avarias)" : "Ruim (Com defeito/avaria)"}
+${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
 *Motivo:* ${finalReason}
 *Observações:* ${observation || "Sem observações adicionais"}
 --------------------------------
@@ -243,11 +247,22 @@ Valor Original: ${formatCurrency(safeProd.valor_venda)}
 
     // Dynamic Reasons
     const getReasons = () => {
-        if (conditionType === "Boa") {
-            return ["Não serviu", "Arrependimento", "Compra errada", "Outros"]
-        }
-        if (conditionType === "Ruim") {
-            return ["Touch ruim", "Imagem ruim", "Não Carrega", "Tampa não encaixa", "Outros"]
+        const getReasons = () => {
+            if (situationType === "Boa") {
+                return [
+                    "Cliente desistiu",
+                    "Qualidade contestada pelo cliente",
+                    "Compra de modelo incorreto",
+                    "Envio incorreto",
+                    "Problema na placa do aparelho",
+                    "Versão",
+                    "Outros"
+                ]
+            }
+            if (situationType === "Ruim") {
+                return ["Touch ruim", "Imagem ruim", "Não Carrega", "Tampa não encaixa", "Outros"]
+            }
+            return []
         }
         return []
     }
@@ -376,44 +391,49 @@ Valor Original: ${formatCurrency(safeProd.valor_venda)}
                                                     <Label className="text-base">Situação da Peça *</Label>
                                                     <RadioGroup
                                                         value={situationType}
-                                                        onValueChange={(val: "Nova" | "Usada") => {
+                                                        onValueChange={(val: "Boa" | "Ruim") => {
                                                             setSituationType(val)
+                                                            setReason("")
+                                                            setCustomReason("")
+                                                            if (val === "Ruim") {
+                                                                setConditionType("") // Clear sub-condition if Ruim
+                                                            }
                                                         }}
                                                         className="flex gap-4"
                                                     >
                                                         <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
-                                                            <RadioGroupItem value="Nova" id="sit-nova" />
-                                                            <Label htmlFor="sit-nova" className="cursor-pointer w-full font-medium">Nova (Sem uso)</Label>
+                                                            <RadioGroupItem value="Boa" id="sit-boa" />
+                                                            <Label htmlFor="sit-boa" className="cursor-pointer w-full font-medium">Boa (Sem avarias)</Label>
                                                         </div>
                                                         <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
-                                                            <RadioGroupItem value="Usada" id="sit-usada" />
-                                                            <Label htmlFor="sit-usada" className="cursor-pointer w-full font-medium">Usada / Instalada</Label>
+                                                            <RadioGroupItem value="Ruim" id="sit-ruim" />
+                                                            <Label htmlFor="sit-ruim" className="cursor-pointer w-full font-medium">Ruim (Com defeito/avaria)</Label>
                                                         </div>
                                                     </RadioGroup>
                                                 </div>
 
-                                                {/* Condition Radio Group */}
-                                                <div className="space-y-2">
-                                                    <Label className="text-base">Condição da Peça *</Label>
-                                                    <RadioGroup
-                                                        value={conditionType}
-                                                        onValueChange={(val: "Boa" | "Ruim") => {
-                                                            setConditionType(val)
-                                                            setReason("")
-                                                            setCustomReason("")
-                                                        }}
-                                                        className="flex gap-4"
-                                                    >
-                                                        <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
-                                                            <RadioGroupItem value="Boa" id="cond-boa" />
-                                                            <Label htmlFor="cond-boa" className="cursor-pointer w-full font-medium">Boa (Sem defeitos)</Label>
-                                                        </div>
-                                                        <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
-                                                            <RadioGroupItem value="Ruim" id="cond-ruim" />
-                                                            <Label htmlFor="cond-ruim" className="cursor-pointer w-full font-medium">Ruim (Com defeitos)</Label>
-                                                        </div>
-                                                    </RadioGroup>
-                                                </div>
+                                                {/* Condition Radio Group (Only if Boa) */}
+                                                {situationType === "Boa" && (
+                                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                        <Label className="text-base">Condição da Peça *</Label>
+                                                        <RadioGroup
+                                                            value={conditionType}
+                                                            onValueChange={(val: "Nova" | "Usada") => {
+                                                                setConditionType(val)
+                                                            }}
+                                                            className="flex gap-4"
+                                                        >
+                                                            <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                                <RadioGroupItem value="Nova" id="cond-nova" />
+                                                                <Label htmlFor="cond-nova" className="cursor-pointer w-full font-medium">Nova</Label>
+                                                            </div>
+                                                            <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                                <RadioGroupItem value="Usada" id="cond-usada" />
+                                                                <Label htmlFor="cond-usada" className="cursor-pointer w-full font-medium">Usada</Label>
+                                                            </div>
+                                                        </RadioGroup>
+                                                    </div>
+                                                )}
 
                                                 {/* Reason Select - Only shows if condition is selected */}
                                                 {conditionType && (
