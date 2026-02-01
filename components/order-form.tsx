@@ -269,6 +269,42 @@ export function OrderForm(props: OrderFormProps) {
       const order = await betelAPI.getSaleDetail(orderId)
 
       if (order) {
+
+        // Enrich products with codes if missing
+        if (order.produtos && Array.isArray(order.produtos)) {
+          const enrichedProducts = await Promise.all(order.produtos.map(async (item: any) => {
+            const productData = item.produto || item
+            if (!productData) return item
+
+            // Check if code is missing or placeholder
+            const currentCode = productData.codigo || productData.codigo_interno
+            const prodId = productData.produto_id || productData.id
+
+            if ((!currentCode || currentCode === "No Code" || currentCode === "-") && prodId) {
+              try {
+                // console.log(`[v0] Fetching details for product ${prodId} to find code...`)
+                const fullProduct = await betelAPI.getProduct(prodId)
+                if (fullProduct) {
+                  const foundCode = fullProduct.codigo || fullProduct.codigo_interno
+                  if (foundCode) {
+                    if (item.produto) {
+                      item.produto.codigo = foundCode
+                      item.produto.codigo_interno = fullProduct.codigo_interno
+                    } else {
+                      item.codigo = foundCode
+                      item.codigo_interno = fullProduct.codigo_interno
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error("Error fetching product details:", e)
+              }
+            }
+            return item
+          }))
+          order.produtos = enrichedProducts
+        }
+
         setExchangeOrder(order)
       } else {
         setOrderSearchError("Detalhes do pedido não encontrados")

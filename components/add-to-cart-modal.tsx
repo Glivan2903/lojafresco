@@ -19,8 +19,8 @@ export function AddToCartModal({ isOpen, onClose, productName }: AddToCartModalP
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-md bg-white border-0 shadow-xl rounded-xl">
                 <DialogHeader>
-                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                        <CheckCircle className="w-8 h-8 text-green-600" />
+                    <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                        <CheckCircle className="w-8 h-8 text-yellow-500" />
                     </div>
                     <DialogTitle className="text-center text-xl text-gray-800">
                         Produto Adicionado!

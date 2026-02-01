@@ -747,6 +747,19 @@ class BetelAPI {
     }
   }
 
+  async getProduct(productId: string): Promise<Product | null> {
+    try {
+      const response = await this.request(`/produtos/${productId}`)
+      // Response might be a single object or array depending on API
+      if (Array.isArray(response) && response.length > 0) return response[0]
+      if (response && response.data) return response.data
+      return response
+    } catch (error) {
+      console.error(`Failed to load product ${productId}:`, error)
+      return null
+    }
+  }
+
   async createSale(sale: {
     customer: Customer
     items: Array<{ product: Product; quantity: number; subtotal: number }>
