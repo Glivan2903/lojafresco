@@ -577,11 +577,12 @@ export function OrderForm(props: OrderFormProps) {
 
         if (selectedItem) {
           const safeProd = selectedItem.produto || selectedItem
-          const itemCode = safeProd.codigo || safeProd.codigo_interno || selectedItem.codigo || safeProd.referencia || "No Code"
+          const itemCode = safeProd.codigo || safeProd.codigo_interno || selectedItem.codigo || safeProd.referencia
+          const finalItemCode = itemCode || "No Code"
 
-          console.log("[v0-submit] Selected Item for Credit:", selectedItem)
-          console.log("[v0-submit] Safe Prod:", safeProd)
-          console.log("[v0-submit] Resolved Item Code:", itemCode)
+          console.log("[v0-submit-credit] Selected Item for Credit:", selectedItem)
+          console.log("[v0-submit-credit] Safe Prod:", safeProd)
+          console.log("[v0-submit-credit] Resolved Item Code:", finalItemCode)
 
           const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
           const difference = itemValue - total
@@ -589,7 +590,7 @@ export function OrderForm(props: OrderFormProps) {
 
           // Build Smart Observations
           observations += `\n\n--- DETALHES CRÉDITO PEÇA DEVOLVIDA ---\n`
-          observations += `Peça: ${itemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto}\n`
+          observations += `Peça: ${finalItemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto}\n`
           observations += `Estado: ${returnedItemCondition}\n`
           observations += `Valor Peça Antiga: ${formatPrice(itemValue)}\n`
           observations += `Valor Nova Compra: ${formatPrice(total)}\n`
@@ -617,7 +618,7 @@ export function OrderForm(props: OrderFormProps) {
           dataToSubmit.observations = observations
 
           dataToSubmit.returnedItemDetails = {
-            name: `${itemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto || "Peça Devolvida"}`,
+            name: `${finalItemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto || "Peça Devolvida"}`,
             condition: returnedItemCondition,
             purchaseDate: exchangeOrder.data_criacao || exchangeOrder.data || new Date().toISOString().split("T")[0],
             value: String(itemValue),
