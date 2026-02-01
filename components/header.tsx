@@ -12,6 +12,9 @@ import { CustomerFinancial } from "./customer-financial"
 import { CustomerReturns } from "./customer-returns"
 import { DollarSign, RotateCcw } from "lucide-react"
 
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Menu } from "lucide-react"
+
 interface HeaderProps {
   customer: Customer
   quoteItemsCount: number
@@ -24,6 +27,7 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLog
   const [showOrders, setShowOrders] = useState(false)
   const [showFinancial, setShowFinancial] = useState(false)
   const [showReturns, setShowReturns] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
     <>
@@ -38,38 +42,106 @@ export function Header({ customer, quoteItemsCount, onViewQuote, onLogout, onLog
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 text-sm">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium">{customer.nome}</span>
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">{customer.nome}</span>
+              </div>
+
+              <Button variant="outline" onClick={() => setShowOrders(true)} className="bg-transparent">
+                <FileText className="w-4 h-4 mr-2" />
+                <span>Consultar Pedidos</span>
+              </Button>
+
+              <Button variant="outline" onClick={() => setShowFinancial(true)} className="bg-transparent">
+                <DollarSign className="w-4 h-4 mr-2" />
+                <span>Débitos</span>
+              </Button>
+
+              <Button variant="outline" onClick={() => setShowReturns(true)} className="bg-transparent">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                <span>Devolução de Peças</span>
+              </Button>
+
+              <Button variant="outline" onClick={onViewQuote} className="relative bg-transparent">
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                <span>Orçamento</span>
+                {quoteItemsCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {quoteItemsCount}
+                  </Badge>
+                )}
+              </Button>
             </div>
 
-            <Button variant="outline" onClick={() => setShowOrders(true)} className="bg-transparent">
-              <FileText className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Consultar Pedidos</span>
-            </Button>
+            {/* Mobile Navigation (Hamburger) */}
+            <div className="md:hidden flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onViewQuote}
+                className="mr-1 relative"
+              >
+                <ShoppingCart className="h-6 w-6" />
+                {quoteItemsCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-[10px]"
+                  >
+                    {quoteItemsCount}
+                  </Badge>
+                )}
+              </Button>
 
-            <Button variant="outline" onClick={() => setShowFinancial(true)} className="bg-transparent">
-              <DollarSign className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Débitos</span>
-            </Button>
+              <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="mr-2">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                  <SheetHeader className="text-left mb-6">
+                    <SheetTitle>Menu</SheetTitle>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                      <User className="w-4 h-4" />
+                      <span>{customer.nome}</span>
+                    </div>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => { setShowOrders(true); setIsMenuOpen(false); }}
+                      className="justify-start"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Consultar Pedidos
+                    </Button>
 
-            <Button variant="outline" onClick={() => setShowReturns(true)} className="bg-transparent">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Devolução de Peças</span>
-            </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => { setShowFinancial(true); setIsMenuOpen(false); }}
+                      className="justify-start"
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Débitos
+                    </Button>
 
-            <Button variant="outline" onClick={onViewQuote} className="relative bg-transparent">
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Orçamento</span>
-              {quoteItemsCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                >
-                  {quoteItemsCount}
-                </Badge>
-              )}
-            </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => { setShowReturns(true); setIsMenuOpen(false); }}
+                      className="justify-start"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Devolução de Peças
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
 
             <Button variant="ghost" size="sm" onClick={onLogout}>
               <LogOut className="w-4 h-4" />

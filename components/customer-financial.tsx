@@ -148,17 +148,12 @@ export function CustomerFinancial({ customer, isOpen, onClose }: CustomerFinanci
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-transparent border-none shadow-none [&>button]:hidden">
                 <Card className="w-full h-full overflow-hidden flex flex-col border border-primary">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b bg-muted/20 relative">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 pt-6 border-b bg-muted/20 relative">
 
                         <div className="w-8"></div> {/* Spacer */}
 
-                        <div className="flex flex-col items-center absolute left-1/2 transform -translate-x-1/2">
+                        <div className="flex flex-col items-center flex-1 justify-center md:flex-none md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
                             <div className="flex items-center gap-2">
-                                {!selectedReceivable && (
-                                    <div className="p-1 bg-primary/10 rounded-full">
-                                        <DollarSign className="w-4 h-4 text-primary" />
-                                    </div>
-                                )}
                                 <CardTitle className="text-xl font-bold text-center">{selectedReceivable ? "Detalhes do Débito" : "Débitos"}</CardTitle>
                             </div>
                             {!selectedReceivable && <p className="text-xs text-muted-foreground text-center">Contas a Pagar (Em Aberto)</p>}
@@ -357,7 +352,7 @@ export function CustomerFinancial({ customer, isOpen, onClose }: CustomerFinanci
                                     {receivables.map((item) => (
                                         <Card key={item.id} className="overflow-hidden border-l-4 border-l-orange-500 shadow-sm hover:shadow-md transition-shadow">
                                             <CardContent className="p-4">
-                                                <div className="flex justify-between items-start mb-2">
+                                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
                                                     <div className="space-y-1">
                                                         <div className="font-semibold text-lg flex items-center gap-2">
                                                             {formatCurrency(item.valor_total || item.valor)}
@@ -366,7 +361,7 @@ export function CustomerFinancial({ customer, isOpen, onClose }: CustomerFinanci
                                                             Vencimento: <span className="font-medium text-foreground">{formatDate(item.data_vencimento)}</span>
                                                         </p>
                                                     </div>
-                                                    <Badge variant="outline" className="text-xs font-normal bg-orange-50 text-orange-700 border-orange-200">
+                                                    <Badge variant="outline" className="text-xs font-normal bg-orange-50 text-orange-700 border-orange-200 whitespace-nowrap">
                                                         Em Aberto
                                                     </Badge>
                                                 </div>

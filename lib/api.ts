@@ -118,6 +118,8 @@ export interface Product {
       }>
     }
   }>
+  fotos?: string[]
+  foto?: string
 }
 
 export interface QuoteItem {

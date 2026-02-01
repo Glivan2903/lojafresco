@@ -88,6 +88,7 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
 
     // Form State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+    const [situationType, setSituationType] = useState<"Nova" | "Usada" | "">("")
     const [conditionType, setConditionType] = useState<"Boa" | "Ruim" | "">("")
     const [reason, setReason] = useState("")
     const [customReason, setCustomReason] = useState("")
@@ -108,6 +109,7 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
     const resetForm = () => {
         setSelectedOrder(null)
         setSelectedItemId(null)
+        setSituationType("")
         setConditionType("")
         setReason("")
         setCustomReason("")
@@ -156,7 +158,7 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
     const handleSubmitReturn = async () => {
         const finalReason = reason === "Outros" ? customReason : reason
 
-        if (!selectedOrder || !selectedItemId || !conditionType || !reason || (reason === "Outros" && !customReason.trim())) {
+        if (!selectedOrder || !selectedItemId || !situationType || !conditionType || !reason || (reason === "Outros" && !customReason.trim())) {
             setError("Preencha todos os campos da devolução.")
             return
         }
@@ -190,6 +192,7 @@ Código: ${itemCode}
 Produto: ${itemName}
 Valor Original: ${formatCurrency(safeProd.valor_venda)}
 --------------------------------
+*Situação da Peça:* ${situationType}
 *Condição da Peça:* ${conditionType}
 *Motivo:* ${finalReason}
 *Observações:* ${observation || "Sem observações adicionais"}
@@ -207,6 +210,7 @@ Valor Original: ${formatCurrency(safeProd.valor_venda)}
 
             // Reset parts of form
             setSelectedItemId(null)
+            setSituationType("")
             setConditionType("")
             setReason("")
             setCustomReason("")
@@ -253,11 +257,10 @@ Valor Original: ${formatCurrency(safeProd.valor_venda)}
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-primary">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 shrink-0 relative">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 pt-6 shrink-0 relative">
                     <div className="w-8"></div> {/* Spacer */}
 
                     <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
-                        <RotateCcw className="w-5 h-5 text-primary" />
                         <CardTitle className="text-xl font-bold text-center">
                             {selectedOrder ? "Solicitar Devolução" : "Selecione um Pedido"}
                         </CardTitle>
@@ -284,7 +287,7 @@ Valor Original: ${formatCurrency(safeProd.valor_venda)}
                     </div>
                 </CardHeader>
 
-                <CardContent className="overflow-y-auto flex-1">
+                <CardContent className="overflow-y-auto flex-1 pt-6">
                     {selectedOrder ? (
                         <div className="space-y-6">
                             {detailLoading && (
@@ -368,6 +371,27 @@ Valor Original: ${formatCurrency(safeProd.valor_venda)}
                                             <h3 className="font-semibold text-lg">2. Detalhes da Devolução</h3>
 
                                             <div className="space-y-4">
+                                                {/* Situation Radio Group */}
+                                                <div className="space-y-2">
+                                                    <Label className="text-base">Situação da Peça *</Label>
+                                                    <RadioGroup
+                                                        value={situationType}
+                                                        onValueChange={(val: "Nova" | "Usada") => {
+                                                            setSituationType(val)
+                                                        }}
+                                                        className="flex gap-4"
+                                                    >
+                                                        <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                            <RadioGroupItem value="Nova" id="sit-nova" />
+                                                            <Label htmlFor="sit-nova" className="cursor-pointer w-full font-medium">Nova (Sem uso)</Label>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2 border rounded-lg p-3 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                                            <RadioGroupItem value="Usada" id="sit-usada" />
+                                                            <Label htmlFor="sit-usada" className="cursor-pointer w-full font-medium">Usada / Instalada</Label>
+                                                        </div>
+                                                    </RadioGroup>
+                                                </div>
+
                                                 {/* Condition Radio Group */}
                                                 <div className="space-y-2">
                                                     <Label className="text-base">Condição da Peça *</Label>
@@ -497,13 +521,15 @@ Valor Original: ${formatCurrency(safeProd.valor_venda)}
                                             className="cursor-pointer hover:bg-accent transition-colors border-l-4 border-l-primary"
                                             onClick={() => fetchOrderDetail(order.id)}
                                         >
-                                            <CardContent className="p-4 flex justify-between items-center">
+                                            <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                                 <div>
                                                     <p className="font-bold text-lg">{order.codigo || order.numero || `#${order.id}`}</p>
                                                     <p className="text-sm text-muted-foreground">{formatDate(order.data_criacao || order.data)}</p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <Badge variant="outline" className="mb-1">{order.nome_situacao || order.situacao}</Badge>
+                                                <div className="text-left sm:text-right flex flex-col items-start sm:items-end w-full sm:w-auto">
+                                                    <Badge variant="outline" className="mb-1 w-fit text-left sm:text-right whitespace-normal h-auto py-1">
+                                                        {order.nome_situacao || order.situacao}
+                                                    </Badge>
                                                     <p className="font-semibold">{formatCurrency(order.total || order.valor_total)}</p>
                                                 </div>
                                             </CardContent>
