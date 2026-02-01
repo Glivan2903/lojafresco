@@ -615,7 +615,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
                           <Button
                             variant="outline"
                             size="sm"
-                            className="hidden sm:flex items-center gap-1 text-xs sm:text-sm px-3 sm:px-4 h-7 sm:h-8"
+                            className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-4 h-7 sm:h-8"
                           >
                             <Info className="w-3 h-3 mr-1" />
                             Detalhes
