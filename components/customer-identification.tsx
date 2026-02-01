@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Clock, CheckCircle, Mail, Key, Eye, EyeOff, Lock, Settings } from "lucide-react"
+import { Loader2, Clock, CheckCircle, Mail, Key, Eye, EyeOff, Lock, Settings, AlertTriangle } from "lucide-react"
 import Image from "next/image"
 import { validateCPF, validateCNPJ } from "@/lib/validations"
 import { betelAPI, type Customer } from "@/lib/api"
@@ -398,7 +398,10 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
         <AlertDialog open={showWarningModal} onOpenChange={setShowWarningModal}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Atenção</AlertDialogTitle>
+              <AlertDialogTitle className="flex items-center justify-center gap-2 text-warning">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                Atenção
+              </AlertDialogTitle>
               <AlertDialogDescription className="space-y-2">
                 <p>Identificamos que este CPF/CNPJ ou e-mail já possui cadastro.</p>
                 <p>Entre em contato pelo nosso WhatsApp para recuperar sua senha: 👉 <span className="font-bold">88 98863-8990</span></p>
@@ -424,7 +427,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
                 setShowRegistration(true)
               }}>Voltar</AlertDialogCancel>
               <AlertDialogAction
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold"
                 onClick={() => window.open("https://wa.me/5588988638990", "_blank")}
               >
                 Falar no WhatsApp

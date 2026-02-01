@@ -698,7 +698,7 @@ export function OrderForm(props: OrderFormProps) {
       <AlertDialog open={exchangeValidationAlertOpen} onOpenChange={setExchangeValidationAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-warning">
+            <AlertDialogTitle className="flex items-center justify-center gap-2 text-warning">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
               Código Diferente Detectado
             </AlertDialogTitle>
