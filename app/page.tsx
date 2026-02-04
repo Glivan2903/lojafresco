@@ -199,14 +199,8 @@ export default function HomePage() {
         },
         items: quoteItems,
         observations: `
-${orderData.deliveryMethod === "topiqueiro" ? `
-DADOS DE ENTREGA (TOPIQUEIRO):
-Nome: ${orderData.topiqueiroName}
-${orderData.topiqueiroTime ? `Horário de Saída: ${orderData.topiqueiroTime}` : ""}
-${orderData.topiqueiroPhone ? `Telefone: ${orderData.topiqueiroPhone}` : ""}
-`.replace(/^\s*[\r\n]/gm, "") : ""}
+${orderData.observations || ""}
 
-${orderData.observations ? `OBSERVAÇÕES ADICIONAIS:\n${orderData.observations}` : ""}
 
 ${orderData.exchangeDetails ? `
 DETALHES DA TROCA:

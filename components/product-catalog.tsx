@@ -441,6 +441,11 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                     )}
+                    {availableStock > 0 && availableStock <= 2 && (
+                      <Badge variant="destructive" className="absolute top-1 right-1 px-1.5 py-0 text-[10px] h-5 shadow-sm">
+                        Restam {availableStock}
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="p-2 flex flex-col h-full">
@@ -584,6 +589,11 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
                           </Badge>
                         )}
                         <div className="text-sm sm:text-base font-bold text-primary">{formatPrice(product)}</div>
+                        {availableStock > 0 && availableStock <= 2 && (
+                          <Badge variant="destructive" className="px-1.5 py-0 text-[10px] h-5 whitespace-nowrap">
+                            Restam {availableStock}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 

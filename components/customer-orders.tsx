@@ -48,6 +48,13 @@ interface OrderDetail {
     cnpj?: string
   }
   observacoes?: string
+  pagamentos?: Array<{
+    pagamento: {
+      nome_forma_pagamento: string
+      valor?: string
+      parcela?: string
+    }
+  }>
 }
 
 interface CustomerOrdersProps {
@@ -234,6 +241,11 @@ export function CustomerOrders({ customer, isOpen, onClose }: CustomerOrdersProp
                           <p>
                             <strong>Total:</strong> {formatCurrency(selectedOrder.total || selectedOrder.valor_total)}
                           </p>
+                          {selectedOrder.pagamentos && selectedOrder.pagamentos.length > 0 && selectedOrder.pagamentos[0]?.pagamento?.nome_forma_pagamento && (
+                            <p>
+                              <strong>Pagamento:</strong> {selectedOrder.pagamentos[0].pagamento.nome_forma_pagamento}
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
