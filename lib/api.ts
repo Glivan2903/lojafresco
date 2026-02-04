@@ -976,7 +976,8 @@ class BetelAPI {
         centro_custo_id: "1", // As per example
         valor_frete: "0.00",
         observacoes: sale.observations || "", // Added payload field for observations
-        condicao_pagamento: "Á vista",
+        condicao_pagamento: "a_vista",
+        condicaoo_pagamento: "a_vista", // Added as per request
         pagamentos: [
           {
             pagamento: {
