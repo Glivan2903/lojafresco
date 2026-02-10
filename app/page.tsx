@@ -296,7 +296,7 @@ Obrigado pela preferência!
       setTimeout(() => {
         setQuoteItems([])
         setAppState("products")
-      }, 4000)
+      }, 10000)
     } catch (error) {
       console.error("[v0] Failed to submit order:", error)
       throw error
@@ -465,7 +465,7 @@ Obrigado pela preferência!
                 setTimeout(() => {
                   setQuoteItems([])
                   setAppState("products")
-                }, 4000)
+                }, 10000)
               }} className="w-full">
                 Já realizei o pagamento
               </Button>
