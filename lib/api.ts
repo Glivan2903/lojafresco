@@ -977,7 +977,7 @@ class BetelAPI {
         valor_frete: "0.00",
         observacoes: sale.observations || "", // Added payload field for observations
         condicao_pagamento: "a_vista",
-        condicaoo_pagamento: "a_vista", // Added as per request
+
         pagamentos: [
           {
             pagamento: {
