@@ -967,6 +967,7 @@ class BetelAPI {
         // codigo: Math.floor(Date.now() / 1000).toString(), // Removed as per example
         cliente_id: sale.customer.id || "1",
         vendedor_id: "1233959", // As per user request
+        canal_venda_id: "1481508", // Added as per request
         nome_canal_venda: "Loja Virtual", // Added as per request
         data: new Date().toISOString().split("T")[0],
         prazo_entrega: new Date().toISOString().split("T")[0],
