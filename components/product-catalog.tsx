@@ -134,17 +134,27 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
       const categoriesData = await betelAPI.getCategories()
       console.log("[v0] Categories loaded:", categoriesData)
 
-      const blockedCategories = ["Insumos", "Mercadoria", "Conector", "Gaveta", "Insumoo", "Placa", "Slot", "Insumo"]
+      const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo"]
 
       const filteredCategories = categoriesData.filter(c =>
-        !blockedCategories.some(blocked => c.nome.toLowerCase().includes(blocked.toLowerCase()))
+        !blockedCategories.some(blocked => c.nome.toLowerCase() === blocked.toLowerCase())
       )
 
       const sortedCategories = filteredCategories.sort((a, b) =>
         a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
       )
 
-      setCategories(sortedCategories)
+      // Apply the user's requested display names
+      const adjustName = (name: string) => {
+        const lower = name.toLowerCase()
+        if (lower.includes("gaveta")) return "Gaveta chip"
+        if (lower.includes("flex sub")) return "Flex Subplaca"
+        if (lower.includes("conector carga") || lower.includes("conector de carga")) return "Conector Carga"
+        if (lower === "auste" || lower === "haste") return "Haste"
+        return name
+      }
+
+      setCategories(sortedCategories.map(c => ({ ...c, nome: adjustName(c.nome) })))
     } catch (err) {
       console.error("Error loading categories:", err)
     }
@@ -346,9 +356,9 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
                   variant={selectedCategory === category.id ? "default" : "outline"}
                   size="sm"
                   onClick={() => handleCategoryChange(category.id)}
-                  className="capitalize whitespace-nowrap"
+                  className="whitespace-nowrap"
                 >
-                  {category.nome.toLowerCase()}
+                  {category.nome}
                 </Button>
               ))}
             </div>
@@ -455,7 +465,10 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
                     </CardTitle>
                     {product.nome_grupo && (
                       <Badge variant="secondary" className="text-[8px] sm:text-xs px-1 py-0">
-                        {product.nome_grupo.toLowerCase()}
+                        {product.nome_grupo.toLowerCase().includes("gaveta") ? "Gaveta chip" :
+                          product.nome_grupo.toLowerCase().includes("flex sub") ? "Flex Subplaca" :
+                            product.nome_grupo.toLowerCase().includes("conector carga") || product.nome_grupo.toLowerCase().includes("conector de") ? "Conector Carga" :
+                              product.nome_grupo}
                       </Badge>
                     )}
                   </div>
@@ -585,7 +598,10 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
                       <div className="flex items-center gap-2">
                         {product.nome_grupo && (
                           <Badge variant="secondary" className="text-[10px] px-1 py-0 h-5">
-                            {product.nome_grupo.toLowerCase()}
+                            {product.nome_grupo.toLowerCase().includes("gaveta") ? "Gaveta chip" :
+                              product.nome_grupo.toLowerCase().includes("flex sub") ? "Flex Subplaca" :
+                                product.nome_grupo.toLowerCase().includes("conector carga") || product.nome_grupo.toLowerCase().includes("conector de") ? "Conector Carga" :
+                                  product.nome_grupo}
                           </Badge>
                         )}
                         <div className="text-sm sm:text-base font-bold text-primary">{formatPrice(product)}</div>

@@ -59,6 +59,15 @@ export interface OrderData {
   topiqueiroName?: string
   topiqueiroTime?: string
   topiqueiroPhone?: string
+  topiqueiroContactType?: string
+  topiqueiroAddress?: {
+    cep: string
+    rua: string
+    numero: string
+    bairro: string
+    cidade: string
+    estado: string
+  }
   deliveryDate?: string
   observations?: string
   exchangeDetails?: {
@@ -120,6 +129,15 @@ export function OrderForm(props: OrderFormProps) {
     topiqueiroName: "",
     topiqueiroTime: "",
     topiqueiroPhone: "",
+    topiqueiroContactType: "",
+    topiqueiroAddress: {
+      cep: "",
+      rua: "",
+      numero: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+    },
     deliveryDate: new Date().toISOString().split("T")[0], // Default to today
     observations: "",
   })
@@ -162,6 +180,10 @@ export function OrderForm(props: OrderFormProps) {
   // Returned Item Credit State
   const [returnedItemName, setReturnedItemName] = useState("")
   const [returnedItemCondition, setReturnedItemCondition] = useState("")
+  const [returnedItemSituation, setReturnedItemSituation] = useState<"Boa" | "Ruim" | "">("")
+  const [returnedItemConditionOption, setReturnedItemConditionOption] = useState<"Nova" | "Usada" | "">("")
+  const [returnedItemReason, setReturnedItemReason] = useState("")
+  const [returnedItemCustomReason, setReturnedItemCustomReason] = useState("")
   const [returnedItemDate, setReturnedItemDate] = useState("")
   const [returnedItemValue, setReturnedItemValue] = useState("")
 
@@ -430,6 +452,9 @@ export function OrderForm(props: OrderFormProps) {
         if (!formData.topiqueiroPhone?.trim()) {
           newErrors.topiqueiroPhone = "Telefone do topiqueiro é obrigatório"
         }
+        if (!formData.topiqueiroContactType?.trim()) {
+          newErrors.topiqueiroContactType = "Tipo do contato é obrigatório"
+        }
       }
     }
 
@@ -459,7 +484,10 @@ export function OrderForm(props: OrderFormProps) {
         newErrors.exchangeItems = "Selecione a peça devolvida"
       }
 
-      if (!returnedItemCondition.trim()) newErrors.returnedItemCondition = "Estado da peça é obrigatório"
+      if (!returnedItemSituation) newErrors.returnedItemSituation = "Situação da peça é obrigatória"
+      if (returnedItemSituation === "Boa" && !returnedItemConditionOption) newErrors.returnedItemConditionOption = "Condição da peça é obrigatória"
+      if ((returnedItemConditionOption || returnedItemSituation === "Ruim") && !returnedItemReason) newErrors.returnedItemReason = "Motivo da devolução é obrigatório"
+      if (returnedItemReason === "Outros" && !returnedItemCustomReason.trim()) newErrors.returnedItemCustomReason = "Descrição do motivo é obrigatória"
 
       // Smart Return Validation
       if (exchangeOrder && selectedExchangeItems.length > 0) {
@@ -588,10 +616,12 @@ export function OrderForm(props: OrderFormProps) {
           const difference = itemValue - total
           let observations = formData.observations || ""
 
+          const finalConditionData = `${returnedItemSituation} ${returnedItemSituation === "Boa" && returnedItemConditionOption ? `(${returnedItemConditionOption})` : ""} - Motivo: ${returnedItemReason === "Outros" ? returnedItemCustomReason : returnedItemReason}`
+
           // Build Smart Observations
           observations += `\n\n--- DETALHES CRÉDITO PEÇA DEVOLVIDA ---\n`
           observations += `Peça: ${finalItemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto}\n`
-          observations += `Estado: ${returnedItemCondition}\n`
+          observations += `Estado: ${finalConditionData}\n`
           observations += `Valor Peça Antiga: ${formatPrice(itemValue)}\n`
           observations += `Valor Nova Compra: ${formatPrice(total)}\n`
 
@@ -619,7 +649,7 @@ export function OrderForm(props: OrderFormProps) {
 
           dataToSubmit.returnedItemDetails = {
             name: `${finalItemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto || "Peça Devolvida"}`,
-            condition: returnedItemCondition,
+            condition: finalConditionData,
             purchaseDate: exchangeOrder.data_criacao || exchangeOrder.data || new Date().toISOString().split("T")[0],
             value: String(itemValue),
             returnedItemValue: String(itemValue)
@@ -924,6 +954,87 @@ export function OrderForm(props: OrderFormProps) {
                           {errors.topiqueiroPhone && (
                             <p className="text-sm text-destructive">{errors.topiqueiroPhone}</p>
                           )}
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="topiqueiroContactType">Tipo do Contato (Local aonde fica) *</Label>
+                          <Input
+                            id="topiqueiroContactType"
+                            value={formData.topiqueiroContactType}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, topiqueiroContactType: e.target.value }))}
+                            className={errors.topiqueiroContactType ? "border-destructive" : ""}
+                            placeholder="Ex: Ponto de Encontro, Garagem..."
+                          />
+                          {errors.topiqueiroContactType && (
+                            <p className="text-sm text-destructive">{errors.topiqueiroContactType}</p>
+                          )}
+                        </div>
+                        <div className="space-y-2 md:col-span-2 pt-2 border-t mt-2">
+                          <Label className="text-base font-semibold">Endereço do Topiqueiro (Opcional)</Label>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="topi_cep">CEP</Label>
+                          <Input
+                            id="topi_cep"
+                            placeholder="00000-000"
+                            value={formData.topiqueiroAddress?.cep}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const clean = val.replace(/\D/g, "");
+                              const formatted = clean.replace(/(\d{5})(\d{3})/, "$1-$2");
+                              setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, cep: formatted } }));
+                            }}
+                            maxLength={9}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="topi_rua">Rua</Label>
+                          <Input
+                            id="topi_rua"
+                            value={formData.topiqueiroAddress?.rua}
+                            onChange={(e) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, rua: e.target.value } }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="topi_numero">Número</Label>
+                          <Input
+                            id="topi_numero"
+                            value={formData.topiqueiroAddress?.numero}
+                            onChange={(e) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, numero: e.target.value } }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="topi_bairro">Bairro</Label>
+                          <Input
+                            id="topi_bairro"
+                            value={formData.topiqueiroAddress?.bairro}
+                            onChange={(e) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, bairro: e.target.value } }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="topi_cidade">Cidade</Label>
+                          <Input
+                            id="topi_cidade"
+                            value={formData.topiqueiroAddress?.cidade}
+                            onChange={(e) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, cidade: e.target.value } }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="topi_estado">Estado</Label>
+                          <Select
+                            value={formData.topiqueiroAddress?.estado}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, estado: value } }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {estados.map((estado) => (
+                                <SelectItem key={estado} value={estado}>
+                                  {estado}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     )}
@@ -1265,16 +1376,98 @@ export function OrderForm(props: OrderFormProps) {
                           </div>
                           {errors.exchangeItems && <p className="text-sm text-destructive">{errors.exchangeItems}</p>}
 
-                          <div className="space-y-2">
-                            <Label htmlFor="returnedItemCondition">Estado da Peça *</Label>
-                            <Input
-                              id="returnedItemCondition"
-                              value={returnedItemCondition}
-                              onChange={(e) => setReturnedItemCondition(e.target.value)}
-                              placeholder="Ex: Usada, Com defeito, Nova"
-                              className={errors.returnedItemCondition ? "border-destructive" : ""}
-                            />
-                            {errors.returnedItemCondition && <p className="text-sm text-destructive">{errors.returnedItemCondition}</p>}
+                          <div className="space-y-4">
+                            {/* Situation Radio Group */}
+                            <div className="space-y-2">
+                              <Label className="text-base">Situação da Peça *</Label>
+                              <RadioGroup
+                                value={returnedItemSituation}
+                                onValueChange={(val: "Boa" | "Ruim") => {
+                                  setReturnedItemSituation(val)
+                                  setReturnedItemReason("")
+                                  setReturnedItemCustomReason("")
+                                  if (val === "Ruim") {
+                                    setReturnedItemConditionOption("")
+                                  }
+                                }}
+                                className="flex gap-4"
+                              >
+                                <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                  <RadioGroupItem value="Boa" id="sit-boa" />
+                                  <Label htmlFor="sit-boa" className="cursor-pointer w-full font-medium">Boa (Sem avarias)</Label>
+                                </div>
+                                <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                  <RadioGroupItem value="Ruim" id="sit-ruim" />
+                                  <Label htmlFor="sit-ruim" className="cursor-pointer w-full font-medium">Ruim (Com defeito/avaria)</Label>
+                                </div>
+                              </RadioGroup>
+                              {errors.returnedItemSituation && <p className="text-sm text-destructive">{errors.returnedItemSituation}</p>}
+                            </div>
+
+                            {/* Condition Radio Group (Only if Boa) */}
+                            {returnedItemSituation === "Boa" && (
+                              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <Label className="text-base">Condição da Peça *</Label>
+                                <RadioGroup
+                                  value={returnedItemConditionOption}
+                                  onValueChange={(val: "Nova" | "Usada") => {
+                                    setReturnedItemConditionOption(val)
+                                  }}
+                                  className="flex gap-4"
+                                >
+                                  <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                    <RadioGroupItem value="Nova" id="cond-nova" />
+                                    <Label htmlFor="cond-nova" className="cursor-pointer w-full font-medium">Nova</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                    <RadioGroupItem value="Usada" id="cond-usada" />
+                                    <Label htmlFor="cond-usada" className="cursor-pointer w-full font-medium">Usada</Label>
+                                  </div>
+                                </RadioGroup>
+                                {errors.returnedItemConditionOption && <p className="text-sm text-destructive">{errors.returnedItemConditionOption}</p>}
+                              </div>
+                            )}
+
+                            {/* Reason Select */}
+                            {(returnedItemConditionOption || returnedItemSituation === "Ruim") && (
+                              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <Label htmlFor="reasonSelect">Motivo da Devolução *</Label>
+                                <Select
+                                  value={returnedItemReason}
+                                  onValueChange={(val) => {
+                                    setReturnedItemReason(val)
+                                    if (val !== "Outros") {
+                                      setReturnedItemCustomReason("")
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className={errors.returnedItemReason ? "border-destructive" : ""}>
+                                    <SelectValue placeholder="Selecione o motivo..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {getReturnedItemReasons().map(r => (
+                                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {errors.returnedItemReason && <p className="text-sm text-destructive">{errors.returnedItemReason}</p>}
+                              </div>
+                            )}
+
+                            {/* Custom Reason Input */}
+                            {returnedItemReason === "Outros" && (
+                              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <Label htmlFor="customReason">Descreva o motivo *</Label>
+                                <Input
+                                  id="customReason"
+                                  placeholder={returnedItemSituation === "Boa" ? "Ex: Não gostei do modelo..." : "Ex: Tela piscando..."}
+                                  value={returnedItemCustomReason}
+                                  onChange={(e) => setReturnedItemCustomReason(e.target.value)}
+                                  className={errors.returnedItemCustomReason ? "border-destructive" : ""}
+                                />
+                                {errors.returnedItemCustomReason && <p className="text-sm text-destructive">{errors.returnedItemCustomReason}</p>}
+                              </div>
+                            )}
                           </div>
 
                           {/* Value Comparison Logic */}

@@ -87,7 +87,7 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
     const [success, setSuccess] = useState<string | null>(null)
 
     // Form State
-    const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+    const [selectedItemIds, setSelectedItemIds] = useState<string[]>([])
     const [situationType, setSituationType] = useState<"Boa" | "Ruim" | "">("")
     const [conditionType, setConditionType] = useState<"Nova" | "Usada" | "">("")
     const [resolutionType, setResolutionType] = useState<"Credito" | "Pix" | "">("")
@@ -110,7 +110,7 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
 
     const resetForm = () => {
         setSelectedOrder(null)
-        setSelectedItemId(null)
+        setSelectedItemIds([])
         setSituationType("")
         setConditionType("")
         setResolutionType("")
@@ -168,7 +168,7 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
         const isPixKeyRequired = resolutionType === "Pix"
         const isPixKeyValid = !isPixKeyRequired || (isPixKeyRequired && pixKey.trim())
 
-        if (!selectedOrder || !selectedItemId || !situationType || !isConditionValid || !reason || (reason === "Outros" && !customReason.trim()) || !resolutionType || !isPixKeyValid) {
+        if (!selectedOrder || selectedItemIds.length === 0 || !situationType || !isConditionValid || !reason || (reason === "Outros" && !customReason.trim()) || !resolutionType || !isPixKeyValid) {
             setError("Preencha todos os campos da devolução.")
             return
         }
@@ -178,17 +178,22 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
 
         try {
             // Find selected item details
-            const selectedItem = selectedOrder.produtos?.find(p => getItemId(p) === selectedItemId)
+            const selectedItems = selectedOrder.produtos?.filter(p => selectedItemIds.includes(getItemId(p))) || []
 
-            if (!selectedItem) {
-                throw new Error("Item selecionado não encontrado")
+            if (selectedItems.length === 0) {
+                throw new Error("Nenhum item selecionado encontrado")
             }
 
-            // Extract details
-            const safeProd = selectedItem.produto
-            const itemCode = safeProd.codigo || safeProd.codigo_interno || safeProd.referencia || "No Code"
-            const itemName = safeProd.nome_produto
             const orderCode = selectedOrder.codigo || selectedOrder.numero || selectedOrder.id
+
+            const itemsText = selectedItems.map(item => {
+                const safeProd = item.produto
+                const itemCode = safeProd.codigo || safeProd.codigo_interno || safeProd.referencia || "No Code"
+                return `Código: ${itemCode}\nProduto: ${safeProd.nome_produto}`
+            }).join('\n\n')
+
+            const totalValueArray = selectedItems.map(item => Number.parseFloat(item.produto.valor_venda || "0"))
+            const totalValue = totalValueArray.reduce((acc, curr) => acc + curr, 0)
 
             // Construct Message
             const message = `*SOLICITAÇÃO DE DEVOLUÇÃO DE PEÇA*
@@ -197,9 +202,8 @@ export function CustomerReturns({ customer, isOpen, onClose }: CustomerReturnsPr
 *Telefone:* ${customer.telefone || "Não informado"}
 *Pedido Original:* ${orderCode}
 --------------------------------
-*Item Devolvido:*
-Código: ${itemCode}
-Produto: ${itemName}
+*Itens Devolvidos:*
+${itemsText}
 --------------------------------
 *Situação da Peça:* ${situationType === "Boa" ? "Boa (Sem avarias)" : "Ruim (Com defeito/avaria)"}
 ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
@@ -208,7 +212,7 @@ ${situationType === "Boa" ? `*Condição da Peça:* ${conditionType}` : ""}
 --------------------------------
 *Forma de Reembolso:* ${resolutionType === "Pix" ? "Estorno via PIX" : "Crédito em Loja"}
 ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
-*Valor a Reembolsar:* ${formatCurrency(safeProd.valor_venda)}
+*Valor a Reembolsar:* ${formatCurrency(totalValue)}
 --------------------------------
 *Ação:* Aguardando análise para ${resolutionType === "Pix" ? "estorno" : "liberação de crédito"}.
 `
@@ -222,7 +226,7 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
             setSuccess("Solicitação preparada! Se o WhatsApp não abriu, verifique o bloqueador de pop-ups.")
 
             // Reset parts of form
-            setSelectedItemId(null)
+            setSelectedItemIds([])
             setSituationType("")
             setConditionType("")
             setResolutionType("")
@@ -250,10 +254,25 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
     const formatDate = (dateString: string | undefined) => {
         if (!dateString) return "Data não informada"
         try {
+            if (dateString.includes('/')) return dateString;
+            const textDate = dateString.split(' ')[0].split('T')[0];
+            const parts = textDate.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
             return new Date(dateString).toLocaleDateString("pt-BR")
         } catch {
             return dateString
         }
+    }
+
+    const getStatusColor = (status: string | undefined) => {
+        const s = (status || "").toLowerCase()
+        if (s.includes("pago") || s.includes("concluído") || s.includes("entregue")) return "bg-green-100 text-green-800 border-green-200"
+        if (s.includes("cancelado") || s.includes("devolução") || s.includes("estornado")) return "bg-red-100 text-red-800 border-red-200"
+        if (s.includes("pendente") || s.includes("aguardando")) return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        if (s.includes("preparação") || s.includes("separação")) return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-secondary text-secondary-foreground"
     }
 
     // Dynamic Reasons
@@ -355,7 +374,7 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
                                             <div className="grid grid-cols-1 gap-2">
                                                 {selectedOrder.produtos.map((item, index) => {
                                                     const id = getItemId(item)
-                                                    const isSelected = selectedItemId === id
+                                                    const isSelected = selectedItemIds.includes(id)
                                                     const safeProd = item.produto
                                                     const itemCode = safeProd.codigo || safeProd.codigo_interno || safeProd.referencia || "No Code"
 
@@ -367,7 +386,9 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
                                             ${isSelected ? "border-primary bg-primary/5" : "border-transparent bg-muted hover:bg-muted/80"}
                                         `}
                                                             onClick={() => {
-                                                                setSelectedItemId(id)
+                                                                setSelectedItemIds(prev =>
+                                                                    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+                                                                )
                                                                 setConditionType("") // Reset logic when item changes
                                                                 setReason("")
                                                             }}
@@ -375,8 +396,8 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
                                                             <div className="flex justify-between items-start">
                                                                 <div className="space-y-1">
                                                                     <div className="flex items-center gap-2">
-                                                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-                                                                            {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                                                                        <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${isSelected ? "border-primary bg-primary" : "border-muted-foreground bg-background"}`}>
+                                                                            {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
                                                                         </div>
                                                                         <span className="font-medium">{safeProd.nome_produto}</span>
                                                                     </div>
@@ -395,7 +416,7 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
                                         )}
                                     </div>
 
-                                    {selectedItemId && (
+                                    {selectedItemIds.length > 0 && (
                                         <div className="space-y-4 pt-4 border-t animate-in fade-in slide-in-from-top-2">
                                             <h3 className="font-semibold text-lg">2. Detalhes da Devolução</h3>
 
@@ -480,7 +501,7 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
                                                         <Label htmlFor="customReason">Descreva o motivo *</Label>
                                                         <Input
                                                             id="customReason"
-                                                            placeholder={conditionType === "Boa" ? "Ex: Não gostei do modelo..." : "Ex: Tela piscando..."}
+                                                            placeholder={situationType === "Boa" ? "Ex: Não gostei do modelo..." : "Ex: Tela piscando..."}
                                                             value={customReason}
                                                             onChange={(e) => setCustomReason(e.target.value)}
                                                             className={error && !customReason ? "border-destructive" : ""}
@@ -596,7 +617,7 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
                                                     <p className="text-sm text-muted-foreground">{formatDate(order.data_criacao || order.data)}</p>
                                                 </div>
                                                 <div className="text-left sm:text-right flex flex-col items-start sm:items-end w-full sm:w-auto">
-                                                    <Badge variant="outline" className="mb-1 w-fit text-left sm:text-right whitespace-normal h-auto py-1">
+                                                    <Badge className={`mb-1 w-fit text-left sm:text-right whitespace-normal h-auto py-1 ${getStatusColor(order.nome_situacao || order.situacao)}`}>
                                                         {order.nome_situacao || order.situacao}
                                                     </Badge>
                                                     <p className="font-semibold">{formatCurrency(order.total || order.valor_total)}</p>

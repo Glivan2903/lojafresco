@@ -201,6 +201,16 @@ export default function HomePage() {
         observations: `
 ${orderData.observations || ""}
 
+${orderData.deliveryMethod === 'topiqueiro' ? `
+DADOS DO TÓPIQUEIRO:
+Nome: ${orderData.topiqueiroName || "Não informado"}
+Telefone: ${orderData.topiqueiroPhone || "Não informado"}
+Tipo do contato (Local): ${orderData.topiqueiroContactType || "Não informado"}
+Endereço: ${orderData.topiqueiroAddress?.rua || "Não informado"}, ${orderData.topiqueiroAddress?.numero || "S/N"}
+Complemento (Horário Saída): ${orderData.topiqueiroTime || "Não informado"}
+Bairro: ${orderData.topiqueiroAddress?.bairro || "Não informado"} - ${orderData.topiqueiroAddress?.cidade || "Não informado"}/${orderData.topiqueiroAddress?.estado || "Não informado"}
+CEP: ${orderData.topiqueiroAddress?.cep || "Não informado"}
+` : ""}
 
 ${orderData.exchangeDetails ? `
 DETALHES DA TROCA:
