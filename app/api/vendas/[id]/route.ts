@@ -65,3 +65,42 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
     }
 }
+
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+    try {
+        const { id } = params
+        if (!id) {
+            return NextResponse.json({ error: "Order ID é obrigatório" }, { status: 400 })
+        }
+
+        const body = await request.json()
+        console.log(`[v0] Server API: Updating sale ID: ${id}`)
+
+        const response = await fetch(`${API_BASE_URL}/vendas/${id}`, {
+            method: "PUT",
+            headers: {
+                accept: "application/json",
+                "access-token": ACCESS_TOKEN,
+                "secret-access-token": SECRET_ACCESS_TOKEN,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+        })
+
+        console.log(`[v0] Server API: Sale update response status: ${response.status}`)
+
+        if (!response.ok) {
+            const errorText = await response.text()
+            console.log(`[v0] Server API: Sale update error:`, errorText)
+            return NextResponse.json({ error: `API Error: ${response.status} - ${errorText}` }, { status: response.status })
+        }
+
+        const data = await response.json()
+        console.log(`[v0] Server API: Sale update response:`, data)
+
+        return NextResponse.json(data)
+    } catch (error) {
+        console.error(`[v0] Server API: Error in PUT /api/vendas/${params?.id}:`, error)
+        return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    }
+}

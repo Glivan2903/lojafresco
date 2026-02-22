@@ -1,0 +1,57 @@
+[
+  {
+    "id": "494956",
+    "tipo_pessoa": "PJ",
+    "nome": "Não Encontrado",
+    "razao_social": "",
+    "cnpj": "",
+    "inscricao_estadual": "",
+    "inscricao_municipal": "",
+    "cpf": "",
+    "rg": "",
+    "data_nascimento": "",
+    "telefone": "",
+    "celular": "",
+    "email": "",
+    "observacoes": "",
+    "ativo": "1",
+    "cadastrado_em": "2025-09-18 19:48:31",
+    "modificado_em": "2025-12-28 01:15:05",
+    "contatos": [],
+    "enderecos": []
+  },
+  {
+    "id": "532713",
+    "tipo_pessoa": "PF",
+    "nome": "Teste",
+    "razao_social": "",
+    "cnpj": "",
+    "inscricao_estadual": "",
+    "inscricao_municipal": "",
+    "cpf": "",
+    "rg": "",
+    "data_nascimento": "",
+    "telefone": "",
+    "celular": "",
+    "email": "",
+    "observacoes": "",
+    "ativo": "1",
+    "cadastrado_em": "2026-02-20 00:16:17",
+    "modificado_em": "2026-02-20 00:16:17",
+    "contatos": [],
+    "enderecos": [
+      {
+        "endereco": {
+          "cep": "",
+          "logradouro": "",
+          "numero": "",
+          "complemento": "",
+          "bairro": "",
+          "cidade_id": "",
+          "nome_cidade": "",
+          "estado": ""
+        }
+      }
+    ]
+  }
+]

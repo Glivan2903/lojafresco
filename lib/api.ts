@@ -826,8 +826,8 @@ class BetelAPI {
 
       // 3. Resolve Situation ID
       // Hardcoded as per user request: "Aguardando Impressão (Loja Virtual)"
-      const situacaoId = "8662646"
-      const nomeSituacao = "Aguardando Impressão (Loja Virtual)"
+      const situacaoId = "8429895"
+      const nomeSituacao = "Editando"
 
       const paymentDate = new Date().toISOString().split("T")[0];
 
@@ -1029,7 +1029,52 @@ class BetelAPI {
         body: JSON.stringify(saleData),
       })
 
-      return response.data || response // Adjust based on actual API response wrapper
+      const responseData = response.data || response
+
+      if (responseData && responseData.id) {
+        console.log(`[v0] Sale created successfully with ID: ${responseData.id}. Proceeding with status update...`)
+
+        const updatePayload = {
+          codigo: responseData.codigo,
+          cliente_id: responseData.cliente_id || responseData.cliente?.id || saleData.cliente_id,
+          situacao_id: "8662646", // Required exact ID according to the user instructions
+          data: responseData.data || new Date().toISOString().split("T")[0],
+          fornecedor_id: "0",
+          produtos: responseData.produtos?.map((p: any) => ({
+            produto: {
+              produto_id: p.produto?.produto_id,
+              quantidade: p.produto?.quantidade,
+              valor_venda: p.produto?.valor_venda,
+              tipo_desconto: p.produto?.tipo_desconto || "R$",
+              desconto_valor: p.produto?.desconto_valor || "0.00",
+              desconto_porcentagem: p.produto?.desconto_porcentagem || "0.00"
+            }
+          })) || [],
+          pagamentos: responseData.pagamentos?.map((p: any) => ({
+            pagamento: {
+              data_vencimento: p.pagamento?.data_vencimento,
+              valor: p.pagamento?.valor,
+              forma_pagamento_id: p.pagamento?.forma_pagamento_id,
+              plano_contas_id: p.pagamento?.plano_contas_id
+            }
+          })) || []
+        }
+
+        console.log("[v0] Sending secondary PUT request to update status:", updatePayload)
+
+        try {
+          const updateResponse = await this.request(`/vendas/${responseData.id}`, {
+            method: "PUT",
+            body: JSON.stringify(updatePayload),
+          })
+          console.log("[v0] Order status updated successfully:", updateResponse)
+        } catch (updateError) {
+          console.error("[v0] Failed to update order status after creation:", updateError)
+          // We don't throw here to avoid failing the whole order process if only the status update fails
+        }
+      }
+
+      return responseData
     } catch (error) {
       console.error("[v0] Error in createSale:", error)
       throw error
