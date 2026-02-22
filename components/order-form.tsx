@@ -144,6 +144,7 @@ export function OrderForm(props: OrderFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingCep, setIsLoadingCep] = useState(false)
+  const [isLoadingTopiqueiroCep, setIsLoadingTopiqueiroCep] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitProgress, setSubmitProgress] = useState(0)
 
@@ -276,6 +277,46 @@ export function OrderForm(props: OrderFormProps) {
       setErrors((prev) => ({ ...prev, cep: "Erro ao consultar CEP" }))
     } finally {
       setIsLoadingCep(false)
+    }
+  }
+
+  const lookupTopiqueiroCEP = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "")
+
+    if (!validateCEP(cleanCep)) {
+      setErrors((prev) => ({ ...prev, topiqueiroCep: "CEP deve ter 8 dígitos" }))
+      return
+    }
+
+    setIsLoadingTopiqueiroCep(true)
+    setErrors((prev) => ({ ...prev, topiqueiroCep: "" }))
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
+      const data = await response.json()
+
+      if (data.erro) {
+        setErrors((prev) => ({ ...prev, topiqueiroCep: "CEP não encontrado" }))
+        return
+      }
+
+      // Auto-fill topiqueiro address fields
+      setFormData((prev) => ({
+        ...prev,
+        topiqueiroAddress: {
+          ...prev.topiqueiroAddress!,
+          rua: data.logradouro || prev.topiqueiroAddress?.rua || "",
+          bairro: data.bairro || prev.topiqueiroAddress?.bairro || "",
+          cidade: data.localidade || prev.topiqueiroAddress?.cidade || "",
+          estado: data.uf || prev.topiqueiroAddress?.estado || "",
+          cep: data.cep || prev.topiqueiroAddress?.cep || "",
+        },
+      }))
+    } catch (error) {
+      console.error("Error looking up topiqueiro CEP:", error)
+      setErrors((prev) => ({ ...prev, topiqueiroCep: "Erro ao consultar CEP" }))
+    } finally {
+      setIsLoadingTopiqueiroCep(false)
     }
   }
 
@@ -472,9 +513,14 @@ export function OrderForm(props: OrderFormProps) {
         if (!formData.topiqueiroPhone?.trim()) {
           newErrors.topiqueiroPhone = "Telefone do topiqueiro é obrigatório"
         }
-        if (!formData.topiqueiroContactType?.trim()) {
-          newErrors.topiqueiroContactType = "Tipo do contato é obrigatório"
-        }
+
+        // Address is required when "Não Encontrado"
+        if (!formData.topiqueiroAddress?.cep?.trim()) newErrors.topiqueiroCep = "CEP é obrigatório"
+        if (!formData.topiqueiroAddress?.rua?.trim()) newErrors.topiqueiroRua = "Rua é obrigatória"
+        if (!formData.topiqueiroAddress?.numero?.trim()) newErrors.topiqueiroNumero = "Número é obrigatório"
+        if (!formData.topiqueiroAddress?.bairro?.trim()) newErrors.topiqueiroBairro = "Bairro é obrigatório"
+        if (!formData.topiqueiroAddress?.cidade?.trim()) newErrors.topiqueiroCidade = "Cidade é obrigatória"
+        if (!formData.topiqueiroAddress?.estado?.trim()) newErrors.topiqueiroEstado = "Estado é obrigatório"
       }
     }
 
@@ -581,32 +627,35 @@ export function OrderForm(props: OrderFormProps) {
 
             obsTopiqueiro += `Nome: ${selectedCarrier.nome}\n`
             obsTopiqueiro += `Telefone: ${selectedCarrier.celular || selectedCarrier.telefone || "Não informado"}\n`
-            obsTopiqueiro += `Tipo do contato: ${selectedCarrier.observacoes || "Não informado"}\n`
 
             if (selectedCarrier.endereco) {
-              const { logradouro, numero, bairro, nome_cidade, estado, cep, complemento } = selectedCarrier.endereco
-              obsTopiqueiro += `Endereço: ${logradouro || ""} ${numero || ""}, ${bairro || ""} - ${nome_cidade || ""} - ${estado || ""} CEP: ${cep || ""}\n`
-              obsTopiqueiro += `Horário de saída (Complemento): ${complemento || "Não informado"}`
+              const { logradouro, numero, bairro, nome_cidade, estado, complemento } = selectedCarrier.endereco
+              obsTopiqueiro += `Endereço:\n`
+              obsTopiqueiro += `${logradouro || ""} ${numero || "S/N"}\n`
+              obsTopiqueiro += `Bairro: ${bairro || ""}\n`
+              obsTopiqueiro += `Cidade: ${nome_cidade || ""} / ${estado || ""}\n`
+              obsTopiqueiro += `Horário de chegada: ${complemento || "Não informado"}`
             } else {
-              obsTopiqueiro += `Endereço: Não informado\n`
-              obsTopiqueiro += `Horário de saída (Complemento): Não informado`
+              obsTopiqueiro += `Endereço:\nNão informado\n`
+              obsTopiqueiro += `Horário de chegada: Não informado`
             }
             dataToSubmit.observations = (dataToSubmit.observations || "") + obsTopiqueiro
           }
         } else {
           obsTopiqueiro += `Nome: ${formData.topiqueiroName}\n`
           obsTopiqueiro += `Telefone: ${formData.topiqueiroPhone}\n`
-          obsTopiqueiro += `Tipo do contato: ${formData.topiqueiroContactType}\n`
 
-          let endereco = ""
           if (formData.topiqueiroAddress) {
-            const { rua, numero, bairro, cidade, estado, cep } = formData.topiqueiroAddress
-            if (rua || cidade) {
-              endereco = `${rua || ""} ${numero || ""}, ${bairro || ""} - ${cidade || ""} - ${estado || ""} CEP: ${cep || ""}`
-            }
+            const { rua, numero, bairro, cidade, estado } = formData.topiqueiroAddress
+            obsTopiqueiro += `Endereço:\n`
+            obsTopiqueiro += `${rua || ""} ${numero || "S/N"}\n`
+            obsTopiqueiro += `Bairro: ${bairro || ""}\n`
+            obsTopiqueiro += `Cidade: ${cidade || ""} / ${estado || ""}\n`
+          } else {
+            obsTopiqueiro += `Endereço:\nNão informado\n`
           }
-          obsTopiqueiro += `Endereço: ${endereco || "Não informado"}\n`
-          obsTopiqueiro += `Horário de saída (Complemento): ${formData.topiqueiroTime}`
+
+          obsTopiqueiro += `Horário de chegada: ${formData.topiqueiroTime || "Não informado"}`
           dataToSubmit.observations = (dataToSubmit.observations || "") + obsTopiqueiro
         }
       }
@@ -996,76 +1045,84 @@ export function OrderForm(props: OrderFormProps) {
                             <p className="text-sm text-destructive">{errors.topiqueiroPhone}</p>
                           )}
                         </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="topiqueiroContactType">Tipo do Contato (Local aonde fica) *</Label>
-                          <Input
-                            id="topiqueiroContactType"
-                            value={formData.topiqueiroContactType}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, topiqueiroContactType: e.target.value }))}
-                            className={errors.topiqueiroContactType ? "border-destructive" : ""}
-                            placeholder="Ex: Ponto de Encontro, Garagem..."
-                          />
-                          {errors.topiqueiroContactType && (
-                            <p className="text-sm text-destructive">{errors.topiqueiroContactType}</p>
-                          )}
-                        </div>
                         <div className="space-y-2 md:col-span-2 pt-2 border-t mt-2">
-                          <Label className="text-base font-semibold">Endereço do Topiqueiro (Opcional)</Label>
+                          <Label className="text-base font-semibold">Endereço do Topiqueiro *</Label>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="topi_cep">CEP</Label>
-                          <Input
-                            id="topi_cep"
-                            placeholder="00000-000"
-                            value={formData.topiqueiroAddress?.cep}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const clean = val.replace(/\D/g, "");
-                              const formatted = clean.replace(/(\d{5})(\d{3})/, "$1-$2");
-                              setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, cep: formatted } }));
-                            }}
-                            maxLength={9}
-                          />
+                          <Label htmlFor="topi_cep">CEP *</Label>
+                          <div className="relative">
+                            <Input
+                              id="topi_cep"
+                              placeholder="00000-000"
+                              value={formData.topiqueiroAddress?.cep}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const clean = val.replace(/\D/g, "");
+                                const formatted = clean.replace(/(\d{5})(\d{3})/, "$1-$2");
+                                setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, cep: formatted } }));
+
+                                if (clean.length === 8) {
+                                  lookupTopiqueiroCEP(clean);
+                                }
+                              }}
+                              className={errors.topiqueiroCep ? "border-destructive" : ""}
+                              maxLength={9}
+                            />
+                            {isLoadingTopiqueiroCep && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+                          {errors.topiqueiroCep && <p className="text-sm text-destructive">{errors.topiqueiroCep}</p>}
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="topi_rua">Rua</Label>
+                          <Label htmlFor="topi_rua">Rua *</Label>
                           <Input
                             id="topi_rua"
                             value={formData.topiqueiroAddress?.rua}
                             onChange={(e) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, rua: e.target.value } }))}
+                            className={errors.topiqueiroRua ? "border-destructive" : ""}
                           />
+                          {errors.topiqueiroRua && <p className="text-sm text-destructive">{errors.topiqueiroRua}</p>}
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="topi_numero">Número</Label>
+                          <Label htmlFor="topi_numero">Número *</Label>
                           <Input
                             id="topi_numero"
                             value={formData.topiqueiroAddress?.numero}
                             onChange={(e) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, numero: e.target.value } }))}
+                            className={errors.topiqueiroNumero ? "border-destructive" : ""}
                           />
+                          {errors.topiqueiroNumero && <p className="text-sm text-destructive">{errors.topiqueiroNumero}</p>}
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="topi_bairro">Bairro</Label>
+                          <Label htmlFor="topi_bairro">Bairro *</Label>
                           <Input
                             id="topi_bairro"
                             value={formData.topiqueiroAddress?.bairro}
                             onChange={(e) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, bairro: e.target.value } }))}
+                            className={errors.topiqueiroBairro ? "border-destructive" : ""}
                           />
+                          {errors.topiqueiroBairro && <p className="text-sm text-destructive">{errors.topiqueiroBairro}</p>}
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="topi_cidade">Cidade</Label>
+                          <Label htmlFor="topi_cidade">Cidade *</Label>
                           <Input
                             id="topi_cidade"
                             value={formData.topiqueiroAddress?.cidade}
                             onChange={(e) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, cidade: e.target.value } }))}
+                            className={errors.topiqueiroCidade ? "border-destructive" : ""}
                           />
+                          {errors.topiqueiroCidade && <p className="text-sm text-destructive">{errors.topiqueiroCidade}</p>}
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="topi_estado">Estado</Label>
+                          <Label htmlFor="topi_estado">Estado *</Label>
                           <Select
                             value={formData.topiqueiroAddress?.estado}
                             onValueChange={(value) => setFormData(prev => ({ ...prev, topiqueiroAddress: { ...prev.topiqueiroAddress!, estado: value } }))}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className={errors.topiqueiroEstado ? "border-destructive" : ""}>
                               <SelectValue placeholder="Estado" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1076,6 +1133,7 @@ export function OrderForm(props: OrderFormProps) {
                               ))}
                             </SelectContent>
                           </Select>
+                          {errors.topiqueiroEstado && <p className="text-sm text-destructive">{errors.topiqueiroEstado}</p>}
                         </div>
                       </div>
                     )}

@@ -841,24 +841,6 @@ class BetelAPI {
       const atributos = [
         {
           atributo: {
-            id: "50082467", // ID specific for this attribute instance? Or generic? User example showed specific IDs.
-            // Wait, "id" in "atributo" object usually is the instance ID (unique per sale/attribute).
-            // But if we are creating, we might not need to send "id" or "atributo.id"?
-            // Usually on creation we send "atributo_id" and "conteudo".
-            // The example was a response object (GET), which has "id".
-            // For creation (POST), we usually send the definition ID ("atributo_id").
-            // I will send "atributo_id" and "conteudo". I will omit "id" or send "0"/empty if required.
-            // Let's look at the example again:
-            // "atributo": { "id": "50082467", "atributo_id": "82984", ... }
-            // "atributo_id" seems to be the definition.
-            atributo_id: "82984",
-            descricao: "Nome Topiqueiro",
-            conteudo: sale.topiqueiroName || "Não Encontrado",
-            tipo: "texto_simples"
-          }
-        },
-        {
-          atributo: {
             atributo_id: "82985",
             descricao: "Forma Retirada",
             conteudo: formaRetirada,
