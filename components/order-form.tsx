@@ -204,6 +204,26 @@ export function OrderForm(props: OrderFormProps) {
     "Outros"
   ]
 
+  const getReturnedItemReasons = () => {
+    if (returnedItemSituation === "Boa") {
+      return [
+        "Desistência da compra",
+        "Comprei o modelo errado",
+        "Cliente desistiu do conserto",
+        "Outros"
+      ]
+    }
+    return [
+      "Touch ruim",
+      "Imagem ruim / Display falhando",
+      "Bateria não segura carga / Estufada",
+      "Peça veio quebrada / Faltando componente",
+      "Flex rasgado / Danificado",
+      "Não liga / Não funciona",
+      "Outros"
+    ]
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
