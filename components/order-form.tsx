@@ -521,10 +521,6 @@ export function OrderForm(props: OrderFormProps) {
           if (difference > 0 && returnAction === "refund" && !refundPixKey.trim()) {
             newErrors.refundPixKey = "Chave PIX para estorno é obrigatória"
           }
-
-          if (difference < 0 && remainingPaymentMethod === "pix" && !remainingPixKey.trim()) {
-            newErrors.remainingPixKey = "Chave PIX para pagamento é obrigatória"
-          }
         }
       }
     }
@@ -573,17 +569,45 @@ export function OrderForm(props: OrderFormProps) {
       // Inject exchange details if applicable
       const dataToSubmit = { ...formData }
 
-      // Auto-fill topiqueiro name if selected from dropdown
-      if (formData.deliveryMethod === "topiqueiro" && formData.selectedCarrierId && formData.selectedCarrierId !== "others") {
-        const selectedCarrier = carriers.find(c => c.id === formData.selectedCarrierId)
+      // Fetch topiqueiro details for observations
+      if (formData.deliveryMethod === "topiqueiro") {
+        let obsTopiqueiro = "\n\n--- DADOS DO TOPIQUEIRO ---\n"
+        if (formData.selectedCarrierId && formData.selectedCarrierId !== "others") {
+          const selectedCarrier = carriers.find(c => c.id === formData.selectedCarrierId)
+          if (selectedCarrier && selectedCarrier.nome.toLowerCase() !== "não encontrado") {
+            dataToSubmit.topiqueiroName = selectedCarrier.nome
+            dataToSubmit.topiqueiroTime = ""
+            dataToSubmit.topiqueiroPhone = ""
 
-        // Only auto-fill if the carrier is NOT "Não Encontrado"
-        // If it is "Não Encontrado", we respect the manual input from the form
-        if (selectedCarrier && selectedCarrier.nome.toLowerCase() !== "não encontrado") {
-          dataToSubmit.topiqueiroName = selectedCarrier.nome
-          // Clear time and phone for standard carriers as they are not manually entered
-          dataToSubmit.topiqueiroTime = ""
-          dataToSubmit.topiqueiroPhone = ""
+            obsTopiqueiro += `Nome: ${selectedCarrier.nome}\n`
+            obsTopiqueiro += `Telefone: ${selectedCarrier.celular || selectedCarrier.telefone || "Não informado"}\n`
+            obsTopiqueiro += `Tipo do contato: ${selectedCarrier.observacoes || "Não informado"}\n`
+
+            if (selectedCarrier.endereco) {
+              const { logradouro, numero, bairro, nome_cidade, estado, cep, complemento } = selectedCarrier.endereco
+              obsTopiqueiro += `Endereço: ${logradouro || ""} ${numero || ""}, ${bairro || ""} - ${nome_cidade || ""} - ${estado || ""} CEP: ${cep || ""}\n`
+              obsTopiqueiro += `Horário de saída (Complemento): ${complemento || "Não informado"}`
+            } else {
+              obsTopiqueiro += `Endereço: Não informado\n`
+              obsTopiqueiro += `Horário de saída (Complemento): Não informado`
+            }
+            dataToSubmit.observations = (dataToSubmit.observations || "") + obsTopiqueiro
+          }
+        } else {
+          obsTopiqueiro += `Nome: ${formData.topiqueiroName}\n`
+          obsTopiqueiro += `Telefone: ${formData.topiqueiroPhone}\n`
+          obsTopiqueiro += `Tipo do contato: ${formData.topiqueiroContactType}\n`
+
+          let endereco = ""
+          if (formData.topiqueiroAddress) {
+            const { rua, numero, bairro, cidade, estado, cep } = formData.topiqueiroAddress
+            if (rua || cidade) {
+              endereco = `${rua || ""} ${numero || ""}, ${bairro || ""} - ${cidade || ""} - ${estado || ""} CEP: ${cep || ""}`
+            }
+          }
+          obsTopiqueiro += `Endereço: ${endereco || "Não informado"}\n`
+          obsTopiqueiro += `Horário de saída (Complemento): ${formData.topiqueiroTime}`
+          dataToSubmit.observations = (dataToSubmit.observations || "") + obsTopiqueiro
         }
       }
 
@@ -660,9 +684,6 @@ export function OrderForm(props: OrderFormProps) {
             // Remaining to pay
             observations += `Situação: Faltam ${formatPrice(Math.abs(difference))}.\n`
             observations += `Forma de Pagamento Restante: ${remainingPaymentMethod === "pix" ? "PIX" : "Dinheiro"}\n`
-            if (remainingPaymentMethod === "pix") {
-              observations += `Chave PIX utilizada: ${remainingPixKey}\n`
-            }
           }
 
           dataToSubmit.observations = observations
@@ -1562,20 +1583,7 @@ export function OrderForm(props: OrderFormProps) {
                                       </div>
                                     </RadioGroup>
 
-                                    {remainingPaymentMethod === "pix" && (
-                                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                        <Label htmlFor="remainingPixKey">Chave PIX *</Label>
-                                        <Input
-                                          id="remainingPixKey"
-                                          value={remainingPixKey}
-                                          onChange={e => setRemainingPixKey(e.target.value)}
-                                          placeholder="Informe a chave utilizada"
-                                          className={errors.remainingPixKey ? "border-destructive" : ""}
-                                        />
-                                        <p className="text-xs text-muted-foreground">Informe a chave pix que você fará a transferência.</p>
-                                        {errors.remainingPixKey && <p className="text-sm text-destructive">{errors.remainingPixKey}</p>}
-                                      </div>
-                                    )}
+
                                   </div>
                                 )}
                               </div>

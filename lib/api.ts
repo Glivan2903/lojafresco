@@ -157,7 +157,19 @@ export interface Carrier {
   id: string
   nome: string
   ativo?: string
-  // Add other fields if known, but id/nome is minimum
+  telefone?: string
+  celular?: string
+  observacoes?: string
+  endereco?: {
+    logradouro?: string
+    numero?: string
+    complemento?: string
+    bairro?: string
+    cidade?: string
+    nome_cidade?: string
+    estado?: string
+    cep?: string
+  }
 }
 
 export interface Receivable {
@@ -1218,7 +1230,11 @@ class BetelAPI {
       // Map if necessary, assuming standard id/nome for now
       return rawData.map((item: any) => ({
         id: item.id || item.codigo || "",
-        nome: item.nome || item.nome_fantasia || "Sem Nome"
+        nome: item.nome || item.nome_fantasia || "Sem Nome",
+        telefone: item.telefone || "",
+        celular: item.celular || "",
+        observacoes: item.observacoes || "",
+        endereco: item.enderecos?.[0]?.endereco || {}
       }))
     } catch (error) {
       console.error("Failed to load carriers:", error)
