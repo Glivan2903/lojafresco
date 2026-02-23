@@ -134,7 +134,7 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
       const categoriesData = await betelAPI.getCategories()
       console.log("[v0] Categories loaded:", categoriesData)
 
-      const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo"]
+      const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo", "Gaveta", "Conector"]
 
       const filteredCategories = categoriesData.filter(c =>
         !blockedCategories.some(blocked => c.nome.toLowerCase() === blocked.toLowerCase())
@@ -147,7 +147,6 @@ export function ProductCatalog({ customer, onAddToQuote, quoteItemsCount, quoteI
       // Apply the user's requested display names
       const adjustName = (name: string) => {
         const lower = name.toLowerCase()
-        if (lower.includes("gaveta")) return "Gaveta chip"
         if (lower.includes("flex sub")) return "Flex Subplaca"
         if (lower.includes("conector carga") || lower.includes("conector de carga")) return "Conector Carga"
         if (lower === "auste" || lower === "haste") return "Haste"

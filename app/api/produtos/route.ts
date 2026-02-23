@@ -9,7 +9,7 @@ const PRODUCTS_PER_PAGE = 100
 // Helper to filter available products
 // Helper to filter available products
 function filterAvailableProducts(products: any[]) {
-  const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo"]
+  const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo", "Gaveta", "Conector"]
 
   return products.filter((product) => {
     // Check if product is available
@@ -28,7 +28,7 @@ function filterAvailableProducts(products: any[]) {
 
 // Function to just filter blocked categories regardless of availability setting
 function filterBlockedProducts(products: any[]) {
-  const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo"]
+  const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo", "Gaveta", "Conector"]
   return products.filter(product => {
     if (product.nome_grupo && blockedCategories.some(blocked => product.nome_grupo.toLowerCase() === blocked.toLowerCase())) {
       return false
