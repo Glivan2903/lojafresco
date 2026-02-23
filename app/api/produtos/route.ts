@@ -9,7 +9,7 @@ const PRODUCTS_PER_PAGE = 100
 // Helper to filter available products
 // Helper to filter available products
 function filterAvailableProducts(products: any[]) {
-  const blockedCategories = ["Insumos", "Mercadoria", "Conector", "Gaveta", "Insumoo", "Placa", "Slot", "Insumo"]
+  const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo"]
 
   return products.filter((product) => {
     // Check if product is available
@@ -17,8 +17,8 @@ function filterAvailableProducts(products: any[]) {
     if (isNaN(stock) || stock <= 0) return false
 
     // Check if product belongs to blocked category
-    // Using simple includes check as per implementation plan
-    if (product.nome_grupo && blockedCategories.some(blocked => product.nome_grupo.toLowerCase().includes(blocked.toLowerCase()))) {
+    // Using exact match to avoid blocking "Flex Subplaca" when "Placa" is blocked
+    if (product.nome_grupo && blockedCategories.some(blocked => product.nome_grupo.toLowerCase() === blocked.toLowerCase())) {
       return false
     }
 
@@ -28,9 +28,9 @@ function filterAvailableProducts(products: any[]) {
 
 // Function to just filter blocked categories regardless of availability setting
 function filterBlockedProducts(products: any[]) {
-  const blockedCategories = ["Insumos", "Mercadoria", "Conector", "Gaveta", "Insumoo", "Placa", "Slot", "Insumo"]
+  const blockedCategories = ["Insumos", "Mercadoria", "Insumoo", "Placa", "Slot", "Insumo"]
   return products.filter(product => {
-    if (product.nome_grupo && blockedCategories.some(blocked => product.nome_grupo.toLowerCase().includes(blocked.toLowerCase()))) {
+    if (product.nome_grupo && blockedCategories.some(blocked => product.nome_grupo.toLowerCase() === blocked.toLowerCase())) {
       return false
     }
     return true
