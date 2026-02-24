@@ -389,8 +389,6 @@ ${resolutionType === "Pix" ? `*Chave PIX:* ${pixKey}` : ""}
                                                                 setSelectedItemIds(prev =>
                                                                     prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
                                                                 )
-                                                                setConditionType("") // Reset logic when item changes
-                                                                setReason("")
                                                             }}
                                                         >
                                                             <div className="flex justify-between items-start">

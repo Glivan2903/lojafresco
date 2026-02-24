@@ -160,6 +160,30 @@ export interface Carrier {
   telefone?: string
   celular?: string
   observacoes?: string
+  tipo_pessoa?: string
+  razao_social?: string
+  cnpj?: string
+  inscricao_estadual?: string
+  inscricao_municipal?: string
+  cpf?: string
+  rg?: string
+  data_nascimento?: string
+  email?: string
+  cadastrado_em?: string
+  modificado_em?: string
+  contatos?: any[]
+  enderecos?: {
+    endereco: {
+      logradouro?: string
+      numero?: string
+      complemento?: string
+      bairro?: string
+      cidade_id?: string
+      nome_cidade?: string
+      estado?: string
+      cep?: string
+    }
+  }[]
   endereco?: {
     logradouro?: string
     numero?: string
@@ -1256,11 +1280,13 @@ class BetelAPI {
 
       // Map if necessary, assuming standard id/nome for now
       return rawData.map((item: any) => ({
+        ...item,
         id: item.id || item.codigo || "",
         nome: item.nome || item.nome_fantasia || "Sem Nome",
         telefone: item.telefone || "",
         celular: item.celular || "",
         observacoes: item.observacoes || "",
+        enderecos: item.enderecos || [],
         endereco: item.enderecos?.[0]?.endereco || {}
       }))
     } catch (error) {

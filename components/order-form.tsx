@@ -408,12 +408,6 @@ export function OrderForm(props: OrderFormProps) {
   }
 
   const handleToggleExchangeItem = (itemId: string) => {
-    if (formData.paymentMethod === "Credito Peça Devolvida") {
-      // Single selection for this mode
-      setSelectedExchangeItems([itemId])
-      return
-    }
-
     // Check for code validation in "Troca" mode
     if (formData.paymentMethod === "Troca" && !selectedExchangeItems.includes(itemId)) {
       // We are selecting a new item
@@ -557,11 +551,10 @@ export function OrderForm(props: OrderFormProps) {
 
       // Smart Return Validation
       if (exchangeOrder && selectedExchangeItems.length > 0) {
-        const itemId = selectedExchangeItems[0]
-        const selectedItem = exchangeOrder.produtos?.find((item: any) => getItemId(item) === itemId)
+        const selectedItems = exchangeOrder.produtos?.filter((item: any) => selectedExchangeItems.includes(getItemId(item))) || []
 
-        if (selectedItem) {
-          const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
+        if (selectedItems.length > 0) {
+          const itemValue = selectedItems.reduce((acc: number, item: any) => acc + Number(item.produto?.valor_venda || item.valor_venda || 0), 0)
           const difference = itemValue - total
 
           if (difference > 0 && returnAction === "refund" && !refundPixKey.trim()) {
@@ -693,29 +686,27 @@ export function OrderForm(props: OrderFormProps) {
       }
 
       if (formData.paymentMethod === "Credito Peça Devolvida" && exchangeOrder) {
-        const itemId = selectedExchangeItems[0]
-        const selectedItem = exchangeOrder.produtos?.find((item: any) => getItemId(item) === itemId)
+        const selectedItems = exchangeOrder.produtos?.filter((item: any) => selectedExchangeItems.includes(getItemId(item))) || []
 
-        if (selectedItem) {
-          const safeProd = selectedItem.produto || selectedItem
-          const itemCode = safeProd.codigo || safeProd.codigo_interno || selectedItem.codigo || safeProd.referencia
-          const finalItemCode = itemCode || "No Code"
-
-          console.log("[v0-submit-credit] Selected Item for Credit:", selectedItem)
-          console.log("[v0-submit-credit] Safe Prod:", safeProd)
-          console.log("[v0-submit-credit] Resolved Item Code:", finalItemCode)
-
-          const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
+        if (selectedItems.length > 0) {
+          const itemValue = selectedItems.reduce((acc: number, item: any) => acc + Number(item.produto?.valor_venda || item.valor_venda || 0), 0)
           const difference = itemValue - total
           let observations = formData.observations || ""
 
           const finalConditionData = `${returnedItemSituation} ${returnedItemSituation === "Boa" && returnedItemConditionOption ? `(${returnedItemConditionOption})` : ""} - Motivo: ${returnedItemReason === "Outros" ? returnedItemCustomReason : returnedItemReason}`
 
+          const piecesText = selectedItems.map((selectedItem: any) => {
+            const safeProd = selectedItem.produto || selectedItem
+            const itemCode = safeProd.codigo || safeProd.codigo_interno || selectedItem.codigo || safeProd.referencia
+            const finalItemCode = itemCode || "No Code"
+            return `${finalItemCode} - ${safeProd.nome_produto || selectedItem.nome_produto}`
+          }).join(", ")
+
           // Build Smart Observations
-          observations += `\n\n--- DETALHES CRÉDITO PEÇA DEVOLVIDA ---\n`
-          observations += `Peça: ${finalItemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto}\n`
+          observations += `\n\n--- DETALHES CRÉDITO PEÇAS DEVOLVIDAS ---\n`
+          observations += `Peças: ${piecesText}\n`
           observations += `Estado: ${finalConditionData}\n`
-          observations += `Valor Peça Antiga: ${formatPrice(itemValue)}\n`
+          observations += `Valor Total Peças Antigas: ${formatPrice(itemValue)}\n`
           observations += `Valor Nova Compra: ${formatPrice(total)}\n`
 
           if (difference === 0) {
@@ -738,7 +729,7 @@ export function OrderForm(props: OrderFormProps) {
           dataToSubmit.observations = observations
 
           dataToSubmit.returnedItemDetails = {
-            name: `${finalItemCode} - ${selectedItem.produto?.nome_produto || selectedItem.nome_produto || "Peça Devolvida"}`,
+            name: selectedItems.length > 1 ? `Múltiplas Peças (${selectedItems.length})` : piecesText,
             condition: finalConditionData,
             purchaseDate: exchangeOrder.data_criacao || exchangeOrder.data || new Date().toISOString().split("T")[0],
             value: String(itemValue),
@@ -1445,7 +1436,7 @@ export function OrderForm(props: OrderFormProps) {
                         <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
                           <div className="flex items-center gap-2 font-medium">
                             <Package className="w-4 h-4" />
-                            <span>Selecione a Peça Devolvida</span>
+                            <span>Selecione a(s) Peça(s) Devolvida(s)</span>
                           </div>
 
                           <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -1571,11 +1562,10 @@ export function OrderForm(props: OrderFormProps) {
 
                           {/* Value Comparison Logic */}
                           {selectedExchangeItems.length > 0 && (() => {
-                            const itemId = selectedExchangeItems[0]
-                            const selectedItem = exchangeOrder.produtos?.find((item: any) => getItemId(item) === itemId)
-                            if (!selectedItem) return null
+                            const selectedItems = exchangeOrder.produtos?.filter((item: any) => selectedExchangeItems.includes(getItemId(item))) || []
+                            if (selectedItems.length === 0) return null
 
-                            const itemValue = Number(selectedItem.produto?.valor_venda || selectedItem.valor_venda || 0)
+                            const itemValue = selectedItems.reduce((acc: number, item: any) => acc + Number(item.produto?.valor_venda || item.valor_venda || 0), 0)
                             const difference = itemValue - total
 
                             return (
