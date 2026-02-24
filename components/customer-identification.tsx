@@ -46,6 +46,8 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [showRegistration, setShowRegistration] = useState(false)
+  const [showCompleteRegistrationModal, setShowCompleteRegistrationModal] = useState(false)
+  const [incompleteCustomerData, setIncompleteCustomerData] = useState<Customer | null>(null)
   const [showInactiveAccount, setShowInactiveAccount] = useState(false)
   const [showAccountPending, setShowAccountPending] = useState(false)
   const [documentType, setDocumentType] = useState<"cpf" | "cnpj">("cpf")
@@ -152,11 +154,11 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
         const cleanCustomerDocument = customerDocument.replace(/\D/g, "")
 
         if (cleanCustomerDocument === cleanDocument) {
-          if (existingCustomer.ativo === "0") {
-            setShowInactiveAccount(true)
+          if (existingCustomer.ativo === "1") {
+            // Active users skip address completion strictly according to requirements
+            onCustomerIdentified(existingCustomer)
           } else {
-            // Verify Address Completeness
-            // Verify Address Completeness
+            // Verify Address and Required Fields Completeness for INACTIVE users
             let addr = existingCustomer.endereco
 
             // Check if address is in array format from API
@@ -169,14 +171,33 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
             const rua = addr?.rua || addr?.logradouro
             const cidade = addr?.cidade || addr?.nome_cidade
 
-            console.log("[Address Check] Details:", { addr, rua, numero: addr?.numero, bairro: addr?.bairro, cidade, estado: addr?.estado })
+            const hasMissingData = !existingCustomer.nome || !existingCustomer.email ||
+              (!existingCustomer.cpf && !existingCustomer.cnpj) || !existingCustomer.telefone ||
+              !addr || !rua || !addr.numero || !addr.bairro || !cidade || !addr.estado
 
-            if (!addr || !rua || !addr.numero || !addr.bairro || !cidade || !addr.estado) {
-              console.log("[Address Check] Address incomplete, showing modal")
-              setShowIncompleteAddressModal(true)
-              return
+            if (hasMissingData) {
+              console.log("[Address Check] Address or required data incomplete, showing completion modal")
+              setIncompleteCustomerData(existingCustomer)
+              setFormData((prev) => ({
+                ...prev,
+                nome: existingCustomer.nome || "",
+                email: existingCustomer.email || "",
+                documento: existingCustomer.cpf || existingCustomer.cnpj || "",
+                telefone: existingCustomer.telefone || "",
+                cep: addr?.cep || "",
+                rua: rua || "",
+                numero: addr?.numero || "",
+                complemento: addr?.complemento || "",
+                bairro: addr?.bairro || "",
+                cidade: cidade || "",
+                estado: addr?.estado || "",
+                data_nascimento: existingCustomer.data_nascimento || "",
+              }))
+              setDocumentType(existingCustomer.cnpj ? "cnpj" : "cpf")
+              setShowCompleteRegistrationModal(true)
+            } else {
+              setShowInactiveAccount(true)
             }
-            onCustomerIdentified(existingCustomer)
           }
           return
         } else {
@@ -339,6 +360,79 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
       } else {
         setError("Erro ao cadastrar cliente. Tente novamente.")
       }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCompleteRegistration = async () => {
+    setError("")
+
+    const requiredFields = [
+      { key: "nome", label: "Nome da Loja" },
+      { key: "email", label: "E-mail" },
+      { key: "documento", label: "CPF/CNPJ" },
+      { key: "telefone", label: "Telefone" },
+      { key: "cep", label: "CEP" },
+      { key: "rua", label: "Rua" },
+      { key: "numero", label: "Número" },
+      { key: "bairro", label: "Bairro" },
+      { key: "cidade", label: "Cidade" },
+      { key: "estado", label: "Estado" },
+    ] as const
+
+    for (const field of requiredFields) {
+      if (!formData[field.key as keyof typeof formData].trim()) {
+        setError(`${field.label} é obrigatório`)
+        return
+      }
+    }
+
+    if (!validateDocument()) {
+      setError("Documento inválido")
+      return
+    }
+
+    if (!incompleteCustomerData?.id) {
+      setError("Erro interno: ID do cliente não encontrado.")
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const cleanDocument = formData.documento.replace(/\D/g, "")
+
+      const customerData: Partial<Customer> = {
+        tipo_pessoa: documentType === "cpf" ? "F" : "J",
+        nome: formData.nome,
+        email: formData.email,
+        telefone: formData.telefone,
+        ...(documentType === "cpf" ? { cpf: cleanDocument, data_nascimento: formData.data_nascimento } : { cnpj: cleanDocument }),
+        ativo: "0", // preserve inactive status
+        endereco: {
+          cep: formData.cep,
+          rua: formData.rua,
+          numero: formData.numero,
+          complemento: formData.complemento,
+          bairro: formData.bairro,
+          cidade: formData.cidade,
+          estado: formData.estado,
+        }
+      }
+
+      await betelAPI.updateCustomer(incompleteCustomerData.id, customerData)
+
+      toast({
+        title: "Cadastro atualizado!",
+        description: "Seus dados foram atualizados com sucesso. Seu cadastro continua em análise.",
+      })
+
+      setShowCompleteRegistrationModal(false)
+      setShowInactiveAccount(true)
+    } catch (err) {
+      console.error("Customer update error:", err)
+      setError("Erro ao atualizar cadastro. Tente novamente.")
     } finally {
       setLoading(false)
     }
@@ -663,6 +757,206 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               <Button onClick={handleRegister} disabled={loading} className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold shadow-sm">
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Cadastrar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (showCompleteRegistrationModal) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
+        <AnimatedBackground />
+
+        <Card className="w-full max-w-md shadow-2xl border-0 bg-[#E5E5E5] rounded-xl overflow-hidden">
+          <CardHeader className="text-center pb-2 pt-8">
+            <div className="mx-auto flex flex-col items-center mb-4">
+              <div className="relative w-48 h-20 mb-2">
+                <Image
+                  src="/logo-icore-tech.png"
+                  alt="Icore"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
+            <div>
+              <CardTitle className="text-xl font-semibold text-gray-700">Completar Cadastro</CardTitle>
+            </div>
+            <CardDescription className="text-sm">
+              Por favor, complete as informações obrigatórias para prosseguir.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 px-8 pb-8">
+            <div className="space-y-2">
+              <Label htmlFor="comp-nome" className="text-xs text-gray-500 ml-1">
+                {documentType === "cpf" ? "Nome Completo / Loja" : "Razão Social / Nome da Loja"}
+              </Label>
+              <Input
+                id="comp-nome"
+                value={formData.nome}
+                disabled={!!incompleteCustomerData?.nome}
+                onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
+            </div>
+
+            {documentType === "cpf" && (
+              <div className="space-y-2">
+                <Label htmlFor="comp-data_nascimento" className="text-xs text-gray-500 ml-1">Data de Nascimento</Label>
+                <Input
+                  id="comp-data_nascimento"
+                  type="date"
+                  value={formData.data_nascimento}
+                  disabled={!!incompleteCustomerData?.data_nascimento}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, data_nascimento: e.target.value }))}
+                  className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="comp-email" className="text-xs text-gray-500 ml-1">E-mail</Label>
+              <Input
+                id="comp-email"
+                value={formData.email}
+                disabled={!!incompleteCustomerData?.email}
+                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="comp-doc" className="text-xs text-gray-500 ml-1">{documentType === "cpf" ? "CPF" : "CNPJ"}</Label>
+              <Input
+                id="comp-doc"
+                value={formData.documento}
+                disabled={!!(incompleteCustomerData?.cpf || incompleteCustomerData?.cnpj)}
+                onChange={(e) => setFormData((prev) => ({ ...prev, documento: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="comp-telefone" className="text-xs text-gray-500 ml-1">Telefone *</Label>
+              <Input
+                id="comp-telefone"
+                placeholder="(11) 99999-9999"
+                value={formData.telefone}
+                disabled={!!(incompleteCustomerData?.telefone || incompleteCustomerData?.celular)}
+                onChange={(e) => setFormData((prev) => ({ ...prev, telefone: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="comp-cep" className="text-xs text-gray-500 ml-1">CEP</Label>
+              <Input
+                id="comp-cep"
+                placeholder="00000-000"
+                value={formData.cep}
+                disabled={!!(incompleteCustomerData?.endereco?.cep || incompleteCustomerData?.enderecos?.[0]?.endereco?.cep)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "")
+                  const formatted = value.replace(/(\d{5})(\d{3})/, "$1-$2")
+                  setFormData((prev) => ({ ...prev, cep: formatted }))
+                  if (value.length === 8) {
+                    setIsLoadingCep(true)
+                    fetch(`https://viacep.com.br/ws/${value}/json/`)
+                      .then(res => res.json())
+                      .then(data => {
+                        if (!data.erro) {
+                          setFormData(prev => ({
+                            ...prev,
+                            rua: data.logradouro,
+                            bairro: data.bairro,
+                            cidade: data.localidade,
+                            estado: data.uf
+                          }))
+                        }
+                      })
+                      .catch(console.error)
+                      .finally(() => setIsLoadingCep(false))
+                  }
+                }}
+                maxLength={9}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                placeholder="Rua"
+                value={formData.rua}
+                disabled={!!(incompleteCustomerData?.endereco?.rua || incompleteCustomerData?.endereco?.logradouro || incompleteCustomerData?.enderecos?.[0]?.endereco?.logradouro)}
+                onChange={e => setFormData(p => ({ ...p, rua: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
+              <Input
+                placeholder="Número"
+                value={formData.numero}
+                disabled={!!(incompleteCustomerData?.endereco?.numero || incompleteCustomerData?.enderecos?.[0]?.endereco?.numero)}
+                onChange={e => setFormData(p => ({ ...p, numero: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="comp-bairro" className="text-xs text-gray-500 ml-1">Bairro</Label>
+              <Input
+                id="comp-bairro"
+                placeholder="Bairro"
+                value={formData.bairro}
+                disabled={!!(incompleteCustomerData?.endereco?.bairro || incompleteCustomerData?.enderecos?.[0]?.endereco?.bairro)}
+                onChange={e => setFormData(p => ({ ...p, bairro: e.target.value }))}
+                className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="comp-cidade" className="text-xs text-gray-500 ml-1">Cidade</Label>
+                <Input
+                  id="comp-cidade"
+                  placeholder="Cidade"
+                  value={formData.cidade}
+                  disabled={!!(incompleteCustomerData?.endereco?.cidade || incompleteCustomerData?.endereco?.nome_cidade || incompleteCustomerData?.enderecos?.[0]?.endereco?.nome_cidade)}
+                  onChange={e => setFormData(p => ({ ...p, cidade: e.target.value }))}
+                  className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="comp-estado" className="text-xs text-gray-500 ml-1">Estado</Label>
+                <Input
+                  id="comp-estado"
+                  placeholder="Estado"
+                  value={formData.estado}
+                  disabled={!!(incompleteCustomerData?.endereco?.estado || incompleteCustomerData?.enderecos?.[0]?.endereco?.estado)}
+                  onChange={e => setFormData(p => ({ ...p, estado: e.target.value }))}
+                  className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <Button variant="ghost" onClick={() => {
+                setShowCompleteRegistrationModal(false)
+                setFormData({ nome: "", email: "", documento: "", telefone: "", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "", data_nascimento: "" })
+              }} className="flex-1 text-gray-600">
+                Cancelar
+              </Button>
+              <Button onClick={handleCompleteRegistration} disabled={loading} className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold shadow-sm">
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Salvar Dados
               </Button>
             </div>
           </CardContent>

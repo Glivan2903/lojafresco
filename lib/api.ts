@@ -467,6 +467,58 @@ class BetelAPI {
     }
   }
 
+  async updateCustomer(id: string, customer: Partial<Customer>): Promise<Customer> {
+    try {
+      const customerData: any = {
+        tipo_pessoa: customer.tipo_pessoa === "F" ? "PF" : "PJ",
+        nome: customer.nome || "",
+        razao_social: customer.tipo_pessoa === "J" ? customer.nome : "",
+        cnpj: customer.cnpj || "",
+        cpf: customer.cpf || "",
+        telefone: customer.telefone || "",
+        celular: customer.telefone || "",
+        email: customer.email || "",
+        data_nascimento: customer.data_nascimento || "",
+        ativo: customer.ativo || "0",
+        contatos: customer.telefone
+          ? [
+            {
+              contato: {
+                nome: customer.nome || "",
+                contato: customer.telefone,
+              },
+            },
+          ]
+          : [],
+        enderecos: customer.endereco
+          ? [
+            {
+              endereco: {
+                cep: customer.endereco.cep || "",
+                logradouro: customer.endereco.rua || "",
+                numero: customer.endereco.numero || "",
+                complemento: customer.endereco.complemento || "",
+                bairro: customer.endereco.bairro || "",
+                nome_cidade: customer.endereco.cidade || "",
+                estado: customer.endereco.estado || "",
+              },
+            },
+          ]
+          : [],
+      }
+
+      const response = await this.request(`/clientes/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(customerData),
+      })
+
+      return response.data || response
+    } catch (error) {
+      console.error(`Error in updateCustomer (${id}):`, error)
+      throw error
+    }
+  }
+
   async getProducts(categoryId?: string): Promise<Product[]> {
     try {
       const endpoint = categoryId ? `/produtos?grupo_id=${categoryId}` : "/produtos"
