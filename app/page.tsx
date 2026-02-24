@@ -209,14 +209,6 @@ Motivo: ${orderData.exchangeDetails.reason} ${orderData.exchangeDetails.descript
 Itens para Troca:
 ${orderData.exchangeDetails.selectedItems.map(item => `- ${item.code ? item.code + " - " : ""}${item.name}`).join("\n")}
 ` : ""}
-
-${orderData.returnedItemDetails ? `
-DETALHES PEÇA DEVOLVIDA:
-Peça: ${orderData.returnedItemDetails.name}
-Estado: ${orderData.returnedItemDetails.condition}
-Data Compra: ${new Date(orderData.returnedItemDetails.purchaseDate).toLocaleDateString("pt-BR")}
-Valor: ${orderData.returnedItemDetails.value}
-` : ""}
         `.trim(),
         paymentMethod: orderData.paymentMethod,
         deliveryDate: orderData.deliveryDate,
