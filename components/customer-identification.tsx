@@ -54,7 +54,6 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
   const [showPassword, setShowPassword] = useState(false)
 
   const [showWarningModal, setShowWarningModal] = useState(false)
-  const [showIncompleteAddressModal, setShowIncompleteAddressModal] = useState(false)
 
 
 
@@ -553,34 +552,6 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
           </AlertDialogContent>
         </AlertDialog>
 
-        <AlertDialog open={showIncompleteAddressModal} onOpenChange={setShowIncompleteAddressModal}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center justify-center gap-2 text-warning">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                Atualização Necessária
-              </AlertDialogTitle>
-              <AlertDialogDescription className="space-y-2 text-center">
-                <p>Identificamos que seu cadastro está incompleto (faltam dados de endereço).</p>
-                <p>Para sua segurança e para realizarmos a entrega, precisamos que você atualize seus dados.</p>
-                <p className="mt-2">Entre em contato pelo nosso WhatsApp:</p>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col gap-2 sm:flex-row justify-center">
-              <AlertDialogCancel onClick={() => setShowIncompleteAddressModal(false)}>Voltar</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold"
-                onClick={() => window.open(
-                  `https://wa.me/5588988638990?text=${encodeURIComponent("Olá, estou tentando fazer login mas meu cadastro está incompleto (endereço). Poderia me ajudar?")}`,
-                  "_blank"
-                )}
-              >
-                Atualizar Cadastro
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
         <AnimatedBackground />
 
         <Card className="w-full max-w-md shadow-2xl border-0 bg-[#E5E5E5] rounded-xl overflow-hidden">
@@ -954,9 +925,17 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               }} className="flex-1 text-gray-600">
                 Cancelar
               </Button>
-              <Button onClick={handleCompleteRegistration} disabled={loading} className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold shadow-sm">
+              <Button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleCompleteRegistration();
+                }}
+                disabled={loading}
+                className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold shadow-sm"
+              >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Salvar Dados
+                Atualizar cadastro
               </Button>
             </div>
           </CardContent>
@@ -994,34 +973,6 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               })
               setShowRegistration(true)
             }}>Entendi</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={showIncompleteAddressModal} onOpenChange={setShowIncompleteAddressModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center justify-center gap-2 text-warning">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Atualização Necessária
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-center">
-              <p>Identificamos que seu cadastro está incompleto (faltam dados de endereço).</p>
-              <p>Para sua segurança e para realizarmos a entrega, precisamos que você atualize seus dados.</p>
-              <p className="mt-2">Entre em contato pelo nosso WhatsApp:</p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-row justify-center">
-            <AlertDialogCancel onClick={() => setShowIncompleteAddressModal(false)}>Voltar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold"
-              onClick={() => window.open(
-                `https://wa.me/5588988638990?text=${encodeURIComponent("Olá, estou tentando fazer login mas meu cadastro está incompleto (endereço). Poderia me ajudar?")}`,
-                "_blank"
-              )}
-            >
-              Atualizar Cadastro
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
