@@ -62,10 +62,12 @@ export interface Customer {
   }[]
   endereco?: { // Keeping for backward compatibility or internal usage if flattening happens
     rua?: string
+    logradouro?: string
     numero?: string
     complemento?: string
     bairro?: string
     cidade?: string
+    nome_cidade?: string
     cep?: string
     estado?: string
   }

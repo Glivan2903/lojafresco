@@ -153,47 +153,46 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
         const cleanCustomerDocument = customerDocument.replace(/\D/g, "")
 
         if (cleanCustomerDocument === cleanDocument) {
-          if (existingCustomer.ativo === "1") {
-            // Active users skip address completion strictly according to requirements
-            onCustomerIdentified(existingCustomer)
+          // Normalize Address for Checking
+          let addr = existingCustomer.endereco
+
+          // Check if address is in array format from API
+          if ((!addr || !addr.rua) && existingCustomer.enderecos && existingCustomer.enderecos.length > 0) {
+            console.log("[Address Check] Using address from array:", existingCustomer.enderecos[0].endereco)
+            addr = existingCustomer.enderecos[0].endereco
+          }
+
+          const rua = addr?.rua || addr?.logradouro
+          const cidade = addr?.cidade || addr?.nome_cidade
+
+          const hasMissingData = !existingCustomer.nome || !existingCustomer.email ||
+            (!existingCustomer.cpf && !existingCustomer.cnpj) || !existingCustomer.telefone ||
+            !addr || !rua || !addr.numero || !addr.bairro || !cidade || !addr.estado
+
+          if (hasMissingData) {
+            console.log("[Address Check] Required data incomplete, showing completion modal")
+            setIncompleteCustomerData(existingCustomer)
+            setFormData((prev) => ({
+              ...prev,
+              nome: existingCustomer.nome || "",
+              email: existingCustomer.email || "",
+              documento: existingCustomer.cpf || existingCustomer.cnpj || "",
+              telefone: existingCustomer.telefone || existingCustomer.celular || "",
+              cep: addr?.cep || "",
+              rua: rua || "",
+              numero: addr?.numero || "",
+              complemento: addr?.complemento || "",
+              bairro: addr?.bairro || "",
+              cidade: cidade || "",
+              estado: addr?.estado || "",
+              data_nascimento: existingCustomer.data_nascimento || "",
+            }))
+            setDocumentType(existingCustomer.cnpj ? "cnpj" : "cpf")
+            setShowCompleteRegistrationModal(true)
           } else {
-            // Verify Address and Required Fields Completeness for INACTIVE users
-            let addr = existingCustomer.endereco
-
-            // Check if address is in array format from API
-            if ((!addr || !addr.rua) && existingCustomer.enderecos && existingCustomer.enderecos.length > 0) {
-              console.log("[Address Check] Using address from array:", existingCustomer.enderecos[0].endereco)
-              addr = existingCustomer.enderecos[0].endereco
-            }
-
-            // Normalization: map API fields to internal fields if needed
-            const rua = addr?.rua || addr?.logradouro
-            const cidade = addr?.cidade || addr?.nome_cidade
-
-            const hasMissingData = !existingCustomer.nome || !existingCustomer.email ||
-              (!existingCustomer.cpf && !existingCustomer.cnpj) || !existingCustomer.telefone ||
-              !addr || !rua || !addr.numero || !addr.bairro || !cidade || !addr.estado
-
-            if (hasMissingData) {
-              console.log("[Address Check] Address or required data incomplete, showing completion modal")
-              setIncompleteCustomerData(existingCustomer)
-              setFormData((prev) => ({
-                ...prev,
-                nome: existingCustomer.nome || "",
-                email: existingCustomer.email || "",
-                documento: existingCustomer.cpf || existingCustomer.cnpj || "",
-                telefone: existingCustomer.telefone || "",
-                cep: addr?.cep || "",
-                rua: rua || "",
-                numero: addr?.numero || "",
-                complemento: addr?.complemento || "",
-                bairro: addr?.bairro || "",
-                cidade: cidade || "",
-                estado: addr?.estado || "",
-                data_nascimento: existingCustomer.data_nascimento || "",
-              }))
-              setDocumentType(existingCustomer.cnpj ? "cnpj" : "cpf")
-              setShowCompleteRegistrationModal(true)
+            // No missing data, direct based on status
+            if (existingCustomer.ativo === "1") {
+              onCustomerIdentified(existingCustomer)
             } else {
               setShowInactiveAccount(true)
             }
@@ -408,7 +407,7 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
         email: formData.email,
         telefone: formData.telefone,
         ...(documentType === "cpf" ? { cpf: cleanDocument, data_nascimento: formData.data_nascimento } : { cnpj: cleanDocument }),
-        ativo: "0", // preserve inactive status
+        ativo: incompleteCustomerData.ativo || "0", // preserve original status
         endereco: {
           cep: formData.cep,
           rua: formData.rua,
@@ -422,13 +421,23 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
 
       await betelAPI.updateCustomer(incompleteCustomerData.id, customerData)
 
+      const isStillInactive = incompleteCustomerData.ativo === "0"
+
       toast({
         title: "Cadastro atualizado!",
-        description: "Seus dados foram atualizados com sucesso. Seu cadastro continua em análise.",
+        description: isStillInactive
+          ? "Seus dados foram atualizados com sucesso. Seu cadastro continua em análise."
+          : "Seus dados foram atualizados com sucesso.",
       })
 
       setShowCompleteRegistrationModal(false)
-      setShowInactiveAccount(true)
+
+      if (isStillInactive) {
+        setShowInactiveAccount(true)
+      } else {
+        // Resume active login session with updated data
+        onCustomerIdentified({ ...incompleteCustomerData, ...customerData })
+      }
     } catch (err) {
       console.error("Customer update error:", err)
       setError("Erro ao atualizar cadastro. Tente novamente.")
