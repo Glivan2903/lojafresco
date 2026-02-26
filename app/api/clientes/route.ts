@@ -88,4 +88,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }
-\n\nexport const dynamic = "force-dynamic"
+
+
+export const dynamic = "force-dynamic"
