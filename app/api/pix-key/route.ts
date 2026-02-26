@@ -47,3 +47,4 @@ export async function GET() {
         return NextResponse.json({ error: "Failed to fetch PIX key" }, { status: 500 })
     }
 }
+\n\nexport const dynamic = "force-dynamic"

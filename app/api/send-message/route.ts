@@ -55,3 +55,4 @@ export async function POST(request: Request) {
         )
     }
 }
+\n\nexport const dynamic = "force-dynamic"
