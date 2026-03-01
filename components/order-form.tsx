@@ -1357,13 +1357,44 @@ export function OrderForm(props: OrderFormProps) {
                                   value={formData.paymentValues[methodId] || ""}
                                   onChange={(e) => {
                                     const val = e.target.value.replace(/[^0-9,.]/g, '')
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      paymentValues: {
-                                        ...prev.paymentValues,
-                                        [methodId]: val
+
+                                    setFormData(prev => {
+                                      const updatedValues = { ...prev.paymentValues, [methodId]: val }
+
+                                      // If there are exactly 2 methods, auto-update the other one interactively
+                                      if (prev.paymentMethods.length === 2) {
+                                        const otherMethodId = prev.paymentMethods.find(id => id !== methodId)
+                                        if (otherMethodId) {
+                                          const parsedVal = parseFloat(val.replace(/\./g, '').replace(',', '.')) || 0
+                                          const remaining = total - parsedVal
+                                          updatedValues[otherMethodId] = remaining > 0 ? remaining.toFixed(2).replace('.', ',') : "0,00"
+                                        }
+                                      } else {
+                                        // For 3 or more methods, calculate current sum of typed valid numbers and fill an empty one
+                                        let currentSum = 0
+                                        prev.paymentMethods.forEach(id => {
+                                          const vStr = updatedValues[id]
+                                          if (vStr && vStr.trim() !== '') {
+                                            const parsed = parseFloat(vStr.replace(/\./g, '').replace(',', '.'))
+                                            if (!isNaN(parsed) && parsed > 0) {
+                                              currentSum += parsed
+                                            }
+                                          }
+                                        })
+
+                                        // Auto-fill an empty one with the remaining balance if there's any left
+                                        const remaining = total - currentSum
+                                        if (remaining > 0) {
+                                          // find the first empty method to put the rest in
+                                          const emptyMethod = prev.paymentMethods.find(id => !updatedValues[id] || updatedValues[id].trim() === '')
+                                          if (emptyMethod) {
+                                            updatedValues[emptyMethod] = remaining.toFixed(2).replace('.', ',')
+                                          }
+                                        }
                                       }
-                                    }))
+
+                                      return { ...prev, paymentValues: updatedValues }
+                                    })
                                   }}
                                   placeholder="0,00"
                                   className="pl-9"
