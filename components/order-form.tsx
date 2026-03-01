@@ -1312,12 +1312,12 @@ export function OrderForm(props: OrderFormProps) {
                               setFormData((prev) => {
                                 let newMethods: string[] = []
                                 if (checked) {
-                                  if (["a_prazo", "Troca"].includes(method.id)) {
-                                    // Make "A Prazo" and "Troca" exclusive.
+                                  if (["a_prazo", "Troca", "Credito Peça Devolvida"].includes(method.id)) {
+                                    // Make "A Prazo", "Troca" and "Credito Peça Devolvida" exclusive.
                                     newMethods = [method.id]
                                   } else {
-                                    // Remove "A Prazo" and "Troca" if choosing another option.
-                                    newMethods = [...prev.paymentMethods.filter(id => !["a_prazo", "Troca"].includes(id)), method.id]
+                                    // Remove exclusive methods if choosing another option.
+                                    newMethods = [...prev.paymentMethods.filter(id => !["a_prazo", "Troca", "Credito Peça Devolvida"].includes(id)), method.id]
                                   }
                                 } else {
                                   newMethods = prev.paymentMethods.filter((id) => id !== method.id)
@@ -1356,7 +1356,10 @@ export function OrderForm(props: OrderFormProps) {
                                 <Input
                                   value={formData.paymentValues[methodId] || ""}
                                   onChange={(e) => {
-                                    const val = e.target.value.replace(/[^0-9,.]/g, '')
+                                    const rawVal = e.target.value
+                                    const numericVal = rawVal.replace(/\D/g, '')
+                                    // ATM Style Mask: Parse as cents and convert to string with comma
+                                    const val = numericVal ? (parseInt(numericVal, 10) / 100).toFixed(2).replace('.', ',') : ""
 
                                     setFormData(prev => {
                                       const updatedValues = { ...prev.paymentValues, [methodId]: val }
@@ -1365,8 +1368,8 @@ export function OrderForm(props: OrderFormProps) {
                                       if (prev.paymentMethods.length === 2) {
                                         const otherMethodId = prev.paymentMethods.find(id => id !== methodId)
                                         if (otherMethodId) {
-                                          const parsedVal = parseFloat(val.replace(/\./g, '').replace(',', '.')) || 0
-                                          const remaining = total - parsedVal
+                                          const parsedValFloat = parseFloat(val.replace(/\./g, '').replace(',', '.')) || 0
+                                          const remaining = total - parsedValFloat
                                           updatedValues[otherMethodId] = remaining > 0 ? remaining.toFixed(2).replace('.', ',') : "0,00"
                                         }
                                       } else {
