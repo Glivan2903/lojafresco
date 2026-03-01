@@ -216,6 +216,7 @@ ${orderData.exchangeDetails.selectedItems.map(item => `- ${item.code ? item.code
         topiqueiroName: orderData.topiqueiroName,
         topiqueiroTime: orderData.topiqueiroTime,
         topiqueiroPhone: orderData.topiqueiroPhone,
+        transportadoraId: orderData.selectedCarrierId,
       }
 
       console.log("[v0] Enhanced sale data prepared:", enhancedQuoteData)

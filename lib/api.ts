@@ -897,6 +897,7 @@ class BetelAPI {
     topiqueiroName?: string // Added
     topiqueiroTime?: string // Added
     topiqueiroPhone?: string // Added
+    transportadoraId?: string // Added
   }): Promise<any> {
     try {
       // Calculate total value
@@ -1045,7 +1046,7 @@ class BetelAPI {
         prazo_entrega: new Date().toISOString().split("T")[0],
         situacao_id: situacaoId, // "3150"
         nome_situacao: nomeSituacao, // "Confirmado"
-        transportadora_id: "", // As per example
+        transportadora_id: sale.transportadoraId || "", // As per example
         centro_custo_id: "1", // As per example
         valor_frete: "0.00",
         observacoes: sale.observations || "", // Added payload field for observations

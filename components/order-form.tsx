@@ -608,6 +608,20 @@ export function OrderForm(props: OrderFormProps) {
       // Inject exchange details if applicable
       const dataToSubmit = { ...formData }
 
+      if (formData.deliveryMethod === "topiqueiro") {
+        if (formData.selectedCarrierId === "others") {
+          dataToSubmit.selectedCarrierId = ""
+        } else if (formData.selectedCarrierId) {
+          const selectedCarrier = carriers.find(c => c.id === formData.selectedCarrierId)
+          if (selectedCarrier && selectedCarrier.nome.toLowerCase() === "não encontrado") {
+            dataToSubmit.selectedCarrierId = ""
+          }
+        }
+      } else {
+        dataToSubmit.selectedCarrierId = ""
+      }
+
+
       // Fetch topiqueiro details for observations
       if (formData.deliveryMethod === "topiqueiro") {
         let obsTopiqueiro = "\n\n--- DADOS DO TOPIQUEIRO ---\n"
