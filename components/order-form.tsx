@@ -608,20 +608,6 @@ export function OrderForm(props: OrderFormProps) {
       // Inject exchange details if applicable
       const dataToSubmit = { ...formData }
 
-      if (formData.deliveryMethod === "topiqueiro") {
-        if (formData.selectedCarrierId === "others") {
-          dataToSubmit.selectedCarrierId = ""
-        } else if (formData.selectedCarrierId) {
-          const selectedCarrier = carriers.find(c => c.id === formData.selectedCarrierId)
-          if (selectedCarrier && selectedCarrier.nome.toLowerCase() === "não encontrado") {
-            dataToSubmit.selectedCarrierId = ""
-          }
-        }
-      } else {
-        dataToSubmit.selectedCarrierId = ""
-      }
-
-
       // Fetch topiqueiro details for observations
       if (formData.deliveryMethod === "topiqueiro") {
         let obsTopiqueiro = "\n\n--- DADOS DO TOPIQUEIRO ---\n"
@@ -634,7 +620,10 @@ export function OrderForm(props: OrderFormProps) {
 
             obsTopiqueiro += `Nome: ${selectedCarrier.nome}\n`
             obsTopiqueiro += `Telefone: ${selectedCarrier.celular || selectedCarrier.telefone || "Não informado"}\n`
-            obsTopiqueiro += `Observação: ${selectedCarrier.observacoes || "Nenhuma"}\n`
+
+            if (selectedCarrier.observacoes) {
+              obsTopiqueiro += `${selectedCarrier.observacoes}\n`
+            }
 
             if (selectedCarrier.endereco) {
               const { logradouro, numero, bairro, nome_cidade, estado, complemento } = selectedCarrier.endereco
@@ -651,7 +640,6 @@ export function OrderForm(props: OrderFormProps) {
         } else {
           obsTopiqueiro += `Nome: ${formData.topiqueiroName}\n`
           obsTopiqueiro += `Telefone: ${formData.topiqueiroPhone}\n`
-          obsTopiqueiro += `Observação: Nenhuma\n`
 
           if (formData.topiqueiroAddress) {
             const { rua, numero, bairro, cidade, estado } = formData.topiqueiroAddress
