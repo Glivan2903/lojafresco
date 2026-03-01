@@ -290,6 +290,18 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
     try {
       const cleanDocument = formData.documento.replace(/\D/g, "")
 
+      if (documentType === "cpf" && cleanDocument.length !== 11) {
+        setError("O CPF deve ter exatamente 11 números.")
+        setLoading(false)
+        return
+      }
+
+      if (documentType === "cnpj" && cleanDocument.length !== 14) {
+        setError("O CNPJ deve ter exatamente 14 números.")
+        setLoading(false)
+        return
+      }
+
       // Check for duplicates
       const [existingByDoc, existingByEmail] = await Promise.all([
         betelAPI.findCustomer(cleanDocument),
@@ -400,6 +412,18 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
 
     try {
       const cleanDocument = formData.documento.replace(/\D/g, "")
+
+      if (documentType === "cpf" && cleanDocument.length !== 11) {
+        setError("O CPF deve ter exatamente 11 números.")
+        setLoading(false)
+        return
+      }
+
+      if (documentType === "cnpj" && cleanDocument.length !== 14) {
+        setError("O CNPJ deve ter exatamente 14 números.")
+        setLoading(false)
+        return
+      }
 
       const customerData: Partial<Customer> = {
         tipo_pessoa: documentType === "cpf" ? "F" : "J",
@@ -655,7 +679,23 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
               <Input
                 id="reg-doc"
                 value={formData.documento}
-                onChange={(e) => setFormData((prev) => ({ ...prev, documento: e.target.value }))}
+                onChange={(e) => {
+                  let v = e.target.value.replace(/\D/g, "")
+                  if (documentType === "cpf") {
+                    v = v.slice(0, 11)
+                    v = v.replace(/(\d{3})(\d)/, "$1.$2")
+                    v = v.replace(/(\d{3})(\d)/, "$1.$2")
+                    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+                  } else {
+                    v = v.slice(0, 14)
+                    v = v.replace(/^(\d{2})(\d)/, "$1.$2")
+                    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+                    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2")
+                    v = v.replace(/(\d{4})(\d)/, "$1-$2")
+                  }
+                  setFormData((prev) => ({ ...prev, documento: v }))
+                }}
+                maxLength={documentType === "cpf" ? 14 : 18}
                 className="bg-white border-0 shadow-sm rounded-lg text-gray-800 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
               />
             </div>
@@ -815,7 +855,23 @@ export function CustomerIdentification({ onCustomerIdentified }: CustomerIdentif
                 id="comp-doc"
                 value={formData.documento}
                 disabled={!!(incompleteCustomerData?.cpf || incompleteCustomerData?.cnpj)}
-                onChange={(e) => setFormData((prev) => ({ ...prev, documento: e.target.value }))}
+                onChange={(e) => {
+                  let v = e.target.value.replace(/\D/g, "")
+                  if (documentType === "cpf") {
+                    v = v.slice(0, 11)
+                    v = v.replace(/(\d{3})(\d)/, "$1.$2")
+                    v = v.replace(/(\d{3})(\d)/, "$1.$2")
+                    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+                  } else {
+                    v = v.slice(0, 14)
+                    v = v.replace(/^(\d{2})(\d)/, "$1.$2")
+                    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+                    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2")
+                    v = v.replace(/(\d{4})(\d)/, "$1-$2")
+                  }
+                  setFormData((prev) => ({ ...prev, documento: v }))
+                }}
+                maxLength={documentType === "cpf" ? 14 : 18}
                 className="bg-white border-0 shadow-sm rounded-lg text-gray-800 disabled:opacity-75 disabled:bg-gray-200 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-gray-300"
               />
             </div>
