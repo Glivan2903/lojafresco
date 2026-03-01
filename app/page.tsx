@@ -211,6 +211,7 @@ ${orderData.exchangeDetails.selectedItems.map(item => `- ${item.code ? item.code
 ` : ""}
         `.trim(),
         paymentMethods: orderData.paymentMethods,
+        paymentValues: orderData.paymentValues,
         deliveryDate: orderData.deliveryDate,
         deliveryMethod: orderData.deliveryMethod,
         topiqueiroName: orderData.topiqueiroName,
