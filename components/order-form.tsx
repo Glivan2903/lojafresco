@@ -54,6 +54,7 @@ export interface OrderData {
     }
   }
   paymentMethods: string[]
+  paymentValues: Record<string, string>
   deliveryMethod: "delivery" | "pickup" | "topiqueiro" | "motouber"
   selectedCarrierId?: string
   topiqueiroName?: string
@@ -124,6 +125,7 @@ export function OrderForm(props: OrderFormProps) {
       },
     },
     paymentMethods: [],
+    paymentValues: {},
     deliveryMethod: "delivery",
     selectedCarrierId: "",
     topiqueiroName: "",
@@ -521,6 +523,29 @@ export function OrderForm(props: OrderFormProps) {
     if (formData.paymentMethods.length === 0) {
       newErrors.paymentMethods = "Forma de pagamento é obrigatória"
       console.log("[v0] Validation failed: paymentMethod is empty")
+    } else if (formData.paymentMethods.length > 1) {
+      let sum = 0;
+      for (const methodId of formData.paymentMethods) {
+        const valStr = formData.paymentValues[methodId];
+        if (!valStr || valStr.trim() === "") {
+          newErrors.paymentMethods = "Insira o valor para todas as formas de pagamento selecionadas.";
+        } else {
+          // parse Brazilian currency string to float (optional robust parsing can happen here, 
+          // but we restricted regex input to numbers and comma/dot)
+          let cleanVal = valStr.replace(/\./g, '').replace(',', '.');
+          const floatVal = parseFloat(cleanVal);
+          if (isNaN(floatVal) || floatVal <= 0) {
+            newErrors.paymentMethods = "Valor inválido em uma das formas de pagamento.";
+          } else {
+            sum += floatVal;
+          }
+        }
+      }
+
+      // Allow minor float precision difference (e.g. 0.01)
+      if (!newErrors.paymentMethods && Math.abs(sum - total) > 0.01) {
+        newErrors.paymentMethods = `A soma dos pagamentos (R$ ${sum.toFixed(2)}) não bate com o total (R$ ${total.toFixed(2)}).`;
+      }
     }
 
     if (formData.paymentMethods.includes("Troca")) {
@@ -1307,6 +1332,49 @@ export function OrderForm(props: OrderFormProps) {
                         </div>
                       ))}
                   </div>
+
+                  {formData.paymentMethods.length > 1 && (
+                    <div className="mt-4 space-y-3 p-4 bg-accent/30 rounded-lg border">
+                      <Label className="text-base font-semibold">Valores por Forma de Pagamento</Label>
+                      <p className="text-sm text-muted-foreground">O total recebido deve ser igual ao valor do pedido: {formatPrice(total)}</p>
+                      <div className="space-y-3">
+                        {formData.paymentMethods.map((methodId: string) => {
+                          const methodName = [
+                            { id: "pix", label: "PIX" },
+                            { id: "a_receber", label: "A Receber" },
+                            { id: "a_prazo", label: "A Prazo" },
+                            { id: "dinheiro_vista", label: "Dinheiro a Vista" },
+                            { id: "Troca", label: "Troca" },
+                            { id: "Credito Peça Devolvida", label: "Crédito Peça Devolvida" }
+                          ].find(m => m.id === methodId)?.label || methodId;
+
+                          return (
+                            <div key={`val-${methodId}`} className="grid grid-cols-3 items-center gap-4">
+                              <Label className="col-span-1">{methodName}</Label>
+                              <div className="col-span-2 relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                                <Input
+                                  value={formData.paymentValues[methodId] || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9,.]/g, '')
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      paymentValues: {
+                                        ...prev.paymentValues,
+                                        [methodId]: val
+                                      }
+                                    }))
+                                  }}
+                                  placeholder="0,00"
+                                  className="pl-9"
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                   {errors.paymentMethods && <p className="text-sm text-destructive">{errors.paymentMethods}</p>}
                 </div>
 

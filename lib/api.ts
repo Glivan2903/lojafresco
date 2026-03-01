@@ -892,6 +892,7 @@ class BetelAPI {
     items: Array<{ product: Product; quantity: number; subtotal: number }>
     observations?: string
     paymentMethods?: string[]
+    paymentValues?: Record<string, string> // Added
     deliveryDate?: string
     deliveryMethod?: string // Added
     topiqueiroName?: string // Added
@@ -972,10 +973,19 @@ class BetelAPI {
         try {
           const availablePaymentMethods = await this.getPaymentMethods()
 
-          // Split total value equally for demonstration, or exact if we had values
-          const valorPorPagamento = (Number(totalValue) / sale.paymentMethods.length).toFixed(2)
-
           for (const method of sale.paymentMethods) {
+
+            // Determine correct payment value
+            let valorPorPagamento = (Number(totalValue) / sale.paymentMethods.length).toFixed(2);
+            if (isParcelado && sale.paymentValues && sale.paymentValues[method]) {
+              const valStr = sale.paymentValues[method];
+              const cleanVal = valStr.replace(/\./g, '').replace(',', '.');
+              const parsedVal = parseFloat(cleanVal);
+              if (!isNaN(parsedVal)) {
+                valorPorPagamento = parsedVal.toFixed(2)
+              }
+            }
+
             const methodKey = method.toLowerCase()
             let selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === methodKey)
 
