@@ -210,7 +210,7 @@ Itens para Troca:
 ${orderData.exchangeDetails.selectedItems.map(item => `- ${item.code ? item.code + " - " : ""}${item.name}`).join("\n")}
 ` : ""}
         `.trim(),
-        paymentMethod: orderData.paymentMethod,
+        paymentMethods: orderData.paymentMethods,
         deliveryDate: orderData.deliveryDate,
         deliveryMethod: orderData.deliveryMethod,
         topiqueiroName: orderData.topiqueiroName,
@@ -265,7 +265,7 @@ Obrigado pela preferência!
       }
 
       // If PIX, fetch key and show modal
-      if (orderData.paymentMethod === 'pix') {
+      if (orderData.paymentMethods.includes('pix')) {
         try {
           const pixInfo = await betelAPI.getPixKey()
           if (pixInfo) {

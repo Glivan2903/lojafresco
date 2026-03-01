@@ -53,7 +53,7 @@ export interface OrderData {
       estado: string
     }
   }
-  paymentMethod: string
+  paymentMethods: string[]
   deliveryMethod: "delivery" | "pickup" | "topiqueiro" | "motouber"
   selectedCarrierId?: string
   topiqueiroName?: string
@@ -123,7 +123,7 @@ export function OrderForm(props: OrderFormProps) {
         estado: customer.endereco?.estado || "",
       },
     },
-    paymentMethod: "",
+    paymentMethods: [],
     deliveryMethod: "delivery",
     selectedCarrierId: "",
     topiqueiroName: "",
@@ -326,7 +326,7 @@ export function OrderForm(props: OrderFormProps) {
 
 
   useEffect(() => {
-    if ((formData.paymentMethod === "Troca" || formData.paymentMethod === "Credito Peça Devolvida") && customer.id) {
+    if ((formData.paymentMethods.includes("Troca") || formData.paymentMethods.includes("Credito Peça Devolvida")) && customer.id) {
       setIsLoadingOrders(true)
       betelAPI.getCustomerSales(customer.id)
         .then(orders => {
@@ -339,7 +339,7 @@ export function OrderForm(props: OrderFormProps) {
           setIsLoadingOrders(false)
         })
     }
-  }, [formData.paymentMethod, customer.id])
+  }, [formData.paymentMethods, customer.id])
 
   const handleSelectOrder = async (orderId: string) => {
     setExchangeOrderId(orderId)
@@ -369,15 +369,15 @@ export function OrderForm(props: OrderFormProps) {
                 // console.log(`[v0] Fetching details for product ${prodId} to find code...`)
                 const fullProduct = await betelAPI.getProduct(prodId)
                 if (fullProduct) {
-                  const foundCode = fullProduct.codigo || fullProduct.codigo_interno
+                  const foundCode = (fullProduct as any).codigo || (fullProduct as any).codigo_interno
                   if (foundCode) {
                     console.log(`[v0-enrich] Found code ${foundCode} for product ${prodId}`)
                     if (item.produto) {
                       item.produto.codigo = foundCode
-                      item.produto.codigo_interno = fullProduct.codigo_interno
+                      item.produto.codigo_interno = (fullProduct as any).codigo_interno
                     } else {
                       item.codigo = foundCode
-                      item.codigo_interno = fullProduct.codigo_interno
+                      item.codigo_interno = (fullProduct as any).codigo_interno
                     }
                   } else {
                     console.log(`[v0-enrich] No code found in product details for ${prodId}`)
@@ -409,7 +409,7 @@ export function OrderForm(props: OrderFormProps) {
 
   const handleToggleExchangeItem = (itemId: string) => {
     // Check for code validation in "Troca" mode
-    if (formData.paymentMethod === "Troca" && !selectedExchangeItems.includes(itemId)) {
+    if (formData.paymentMethods.includes("Troca") && !selectedExchangeItems.includes(itemId)) {
       // We are selecting a new item
       const item = exchangeOrder.produtos?.find((p: any) => getItemId(p) === itemId)
       if (item && cartItems && cartItems.length > 0) {
@@ -518,12 +518,12 @@ export function OrderForm(props: OrderFormProps) {
       }
     }
 
-    if (!formData.paymentMethod) {
-      newErrors.paymentMethod = "Forma de pagamento é obrigatória"
+    if (formData.paymentMethods.length === 0) {
+      newErrors.paymentMethods = "Forma de pagamento é obrigatória"
       console.log("[v0] Validation failed: paymentMethod is empty")
     }
 
-    if (formData.paymentMethod === "Troca") {
+    if (formData.paymentMethods.includes("Troca")) {
       if (!exchangeOrder) {
         newErrors.exchangeOrder = "É necessário selecionar um pedido para troca"
       } else if (selectedExchangeItems.length === 0) {
@@ -537,7 +537,7 @@ export function OrderForm(props: OrderFormProps) {
       }
     }
 
-    if (formData.paymentMethod === "Credito Peça Devolvida") {
+    if (formData.paymentMethods.includes("Credito Peça Devolvida")) {
       if (!exchangeOrder) {
         newErrors.exchangeOrder = "Selecione o pedido original da peça"
       } else if (selectedExchangeItems.length === 0) {
@@ -661,7 +661,7 @@ export function OrderForm(props: OrderFormProps) {
           // User wants address even for Pickup? Typically no delivery address for pickup.
           // But we will keep it for now as it updates customer profile.
       } */
-      if (formData.paymentMethod === "Troca" && exchangeOrder) {
+      if (formData.paymentMethods.includes("Troca") && exchangeOrder) {
         dataToSubmit.exchangeDetails = {
           originalOrderId: exchangeOrder.codigo || exchangeOrder.id || exchangeOrderId,
           selectedItems: exchangeOrder.produtos
@@ -687,7 +687,7 @@ export function OrderForm(props: OrderFormProps) {
         }
       }
 
-      if (formData.paymentMethod === "Credito Peça Devolvida" && exchangeOrder) {
+      if (formData.paymentMethods.includes("Credito Peça Devolvida") && exchangeOrder) {
         const selectedItems = exchangeOrder.produtos?.filter((item: any) => selectedExchangeItems.includes(getItemId(item))) || []
 
         if (selectedItems.length > 0) {
@@ -1260,390 +1260,409 @@ export function OrderForm(props: OrderFormProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="paymentMethod">Forma de Pagamento *</Label>
-                  <Select
-                    value={formData.paymentMethod}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, paymentMethod: value }))}
-                  >
-                    <SelectTrigger className={errors.paymentMethod ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Selecione a forma de pagamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["delivery", "topiqueiro"].includes(formData.deliveryMethod) ? (
-                        <>
-                          <SelectItem value="pix">PIX</SelectItem>
-                          <SelectItem value="a_receber">A Receber</SelectItem>
-                          <SelectItem value="a_prazo">A Prazo</SelectItem>
-                        </>
-                      ) : (
-                        <>
-                          <SelectItem value="pix">PIX</SelectItem>
-                          <SelectItem value="dinheiro_vista">Dinheiro a Vista</SelectItem>
-                          <SelectItem value="a_prazo">A Prazo</SelectItem>
-                        </>
-                      )}
-                      <SelectItem value="Troca">Troca</SelectItem>
-                      <SelectItem value="Credito Peça Devolvida">Crédito Peça Devolvida</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.paymentMethod && <p className="text-sm text-destructive">{errors.paymentMethod}</p>}
-
-                  {/* Exchange Flow */}
-                  {formData.paymentMethod === "Troca" && (
-                    <div className="mt-4 pt-4 border-t space-y-4 animate-in fade-in slide-in-from-top-4">
-                      <div className="space-y-2">
-                        <Label>Selecione o Pedido para Troca</Label>
-                        {isLoadingOrders ? (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Carregando pedidos...
-                          </div>
-                        ) : (
-                          <Select
-                            value={exchangeOrderId}
-                            onValueChange={handleSelectOrder}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um pedido..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {customerOrders.length > 0 ? (
-                                customerOrders.map((order) => (
-                                  <SelectItem key={order.id} value={order.id}>
-                                    Pedido #{order.codigo || order.numero || order.id} - {formatDateDisplay(order.data_criacao || order.data)} - {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.total || order.valor_total || 0)}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="none" disabled>Nenhum pedido encontrado</SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        )}
-
-                        {orderSearchError && <p className="text-sm text-destructive">{orderSearchError}</p>}
-                        {errors.exchangeOrder && <p className="text-sm text-destructive">{errors.exchangeOrder}</p>}
-                      </div>
-
-                      {isSearchingOrder && (
-                        <div className="flex items-center justify-center py-4">
-                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                        </div>
-                      )}
-
-                      {exchangeOrder && !isSearchingOrder && (
-                        <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
-                          <div className="flex items-center gap-2 font-medium">
-                            <Package className="w-4 h-4" />
-                            <span>Itens do Pedido ({exchangeOrder.produtos?.length || 0})</span>
-                          </div>
-
-                          <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {exchangeOrder.produtos?.map((item: any, index: number) => {
-                              const itemId = getItemId(item) || `index-${index}`
-                              const safeProd = item.produto || item
-                              const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia || "-"
-                              return (
-                                <div key={itemId} className="flex items-start gap-2 p-2 bg-background rounded border">
-                                  <Checkbox
-                                    id={`item-${itemId}`}
-                                    checked={selectedExchangeItems.includes(itemId)}
-                                    onCheckedChange={() => handleToggleExchangeItem(itemId)}
-                                  />
-                                  <div className="space-y-1">
-                                    <Label htmlFor={`item-${itemId}`} className="font-medium cursor-pointer">
-                                      <span className="text-muted-foreground mr-1 text-xs">#{code}</span>
-                                      {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
-                                    </Label>
-                                    <p className="text-xs text-muted-foreground">
-                                      Qtd: {item.produto?.quantidade || item.quantidade} | Valor: {formatPrice(Number(item.produto?.valor_venda || item.valor_venda || 0))}
-                                    </p>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                          {errors.exchangeItems && <p className="text-sm text-destructive">{errors.exchangeItems}</p>}
-
-                          <div className="space-y-2">
-                            <Label>Motivo da Troca</Label>
-                            <RadioGroup value={exchangeReason} onValueChange={setExchangeReason}>
-                              {exchangeReasons.map((reason) => (
-                                <div key={reason} className="flex items-center space-x-2">
-                                  <RadioGroupItem value={reason} id={`reason-${reason}`} />
-                                  <Label htmlFor={`reason-${reason}`}>{reason}</Label>
-                                </div>
-                              ))}
-                            </RadioGroup>
-                            {errors.exchangeReason && <p className="text-sm text-destructive">{errors.exchangeReason}</p>}
-                          </div>
-
-                          {exchangeReason === "Outros" && (
-                            <div className="space-y-2">
-                              <Label htmlFor="exchangeDescription">Descreva o motivo</Label>
-                              <Textarea
-                                id="exchangeDescription"
-                                value={exchangeDescription}
-                                onChange={(e) => setExchangeDescription(e.target.value)}
-                                placeholder="Descreva detalhadamente o problema..."
-                              />
-                              {errors.exchangeDescription && <p className="text-sm text-destructive">{errors.exchangeDescription}</p>}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Returned Item Credit Flow - REFACTORED */}
-                  {formData.paymentMethod === "Credito Peça Devolvida" && (
-                    <div className="mt-4 pt-4 border-t space-y-4 animate-in fade-in slide-in-from-top-4">
-                      <div className="space-y-2">
-                        <Label>Selecione o Pedido Original</Label>
-                        {isLoadingOrders ? (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Carregando pedidos...
-                          </div>
-                        ) : (
-                          <Select
-                            value={exchangeOrderId}
-                            onValueChange={handleSelectOrder}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um pedido..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {customerOrders.length > 0 ? (
-                                customerOrders.map((order) => (
-                                  <SelectItem key={order.id} value={order.id}>
-                                    Pedido #{order.codigo || order.numero || order.id} - {formatDateDisplay(order.data_criacao || order.data)} - {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.total || order.valor_total || 0)}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="none" disabled>Nenhum pedido encontrado</SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        )}
-                        {errors.exchangeOrder && <p className="text-sm text-destructive">{errors.exchangeOrder}</p>}
-                      </div>
-
-                      {isSearchingOrder && (
-                        <div className="flex items-center justify-center py-4">
-                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                        </div>
-                      )}
-
-                      {exchangeOrder && !isSearchingOrder && (
-                        <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
-                          <div className="flex items-center gap-2 font-medium">
-                            <Package className="w-4 h-4" />
-                            <span>Selecione a(s) Peça(s) Devolvida(s)</span>
-                          </div>
-
-                          <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {exchangeOrder.produtos?.map((item: any, index: number) => {
-                              const itemId = getItemId(item) || `index-${index}`
-                              const safeProd = item.produto || item
-                              const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia || "-"
-                              return (
-                                <div key={itemId} className="flex items-start gap-2 p-2 bg-background rounded border">
-                                  <Checkbox
-                                    id={`returned-item-${itemId}`}
-                                    checked={selectedExchangeItems.includes(itemId)}
-                                    onCheckedChange={() => handleToggleExchangeItem(itemId)}
-                                  />
-                                  <div className="space-y-1">
-                                    <Label htmlFor={`returned-item-${itemId}`} className="font-medium cursor-pointer">
-                                      <span className="text-muted-foreground mr-1 text-xs">#{code}</span>
-                                      {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
-                                    </Label>
-                                    <p className="text-xs text-muted-foreground">
-                                      Valor: {formatPrice(Number(item.produto?.valor_venda || item.valor_venda || 0))}
-                                    </p>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                          {errors.exchangeItems && <p className="text-sm text-destructive">{errors.exchangeItems}</p>}
-
-                          <div className="space-y-4">
-                            {/* Situation Radio Group */}
-                            <div className="space-y-2">
-                              <Label className="text-base">Situação da Peça *</Label>
-                              <RadioGroup
-                                value={returnedItemSituation}
-                                onValueChange={(val: "Boa" | "Ruim") => {
-                                  setReturnedItemSituation(val)
-                                  setReturnedItemReason("")
-                                  setReturnedItemCustomReason("")
-                                  if (val === "Ruim") {
-                                    setReturnedItemConditionOption("")
+                  <Label>Formas de Pagamento *</Label>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {(["delivery", "topiqueiro"].includes(formData.deliveryMethod)
+                      ? [
+                        { id: "pix", label: "PIX" },
+                        { id: "a_receber", label: "A Receber" },
+                        { id: "a_prazo", label: "A Prazo" },
+                      ]
+                      : [
+                        { id: "pix", label: "PIX" },
+                        { id: "dinheiro_vista", label: "Dinheiro a Vista" },
+                        { id: "a_prazo", label: "A Prazo" },
+                      ]
+                    )
+                      .concat([
+                        { id: "Troca", label: "Troca" },
+                        { id: "Credito Peça Devolvida", label: "Crédito Peça Devolvida" },
+                      ])
+                      .map((method) => (
+                        <div key={method.id} className="flex items-center space-x-2 bg-white/50 border p-2 rounded-md">
+                          <Checkbox
+                            id={`payment-${method.id.replace(/\s+/g, '-')}`}
+                            checked={formData.paymentMethods.includes(method.id)}
+                            onCheckedChange={(checked) => {
+                              setFormData((prev) => {
+                                let newMethods: string[] = []
+                                if (checked) {
+                                  if (["a_prazo", "Troca"].includes(method.id)) {
+                                    // Make "A Prazo" and "Troca" exclusive.
+                                    newMethods = [method.id]
+                                  } else {
+                                    // Remove "A Prazo" and "Troca" if choosing another option.
+                                    newMethods = [...prev.paymentMethods.filter(id => !["a_prazo", "Troca"].includes(id)), method.id]
                                   }
+                                } else {
+                                  newMethods = prev.paymentMethods.filter((id) => id !== method.id)
+                                }
+                                return { ...prev, paymentMethods: newMethods }
+                              })
+                            }}
+                          />
+                          <Label htmlFor={`payment-${method.id.replace(/\s+/g, '-')}`} className="text-sm cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis">
+                            {method.label}
+                          </Label>
+                        </div>
+                      ))}
+                  </div>
+                  {errors.paymentMethods && <p className="text-sm text-destructive">{errors.paymentMethods}</p>}
+                </div>
+
+                {/* Exchange Flow */}
+                {formData.paymentMethods.includes("Troca") && (
+                  <div className="mt-4 pt-4 border-t space-y-4 animate-in fade-in slide-in-from-top-4">
+                    <div className="space-y-2">
+                      <Label>Selecione o Pedido para Troca</Label>
+                      {isLoadingOrders ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Carregando pedidos...
+                        </div>
+                      ) : (
+                        <Select
+                          value={exchangeOrderId}
+                          onValueChange={handleSelectOrder}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um pedido..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customerOrders.length > 0 ? (
+                              customerOrders.map((order) => (
+                                <SelectItem key={order.id} value={order.id}>
+                                  Pedido #{order.codigo || order.numero || order.id} - {formatDateDisplay(order.data_criacao || order.data)} - {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.total || order.valor_total || 0)}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="none" disabled>Nenhum pedido encontrado</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                      {orderSearchError && <p className="text-sm text-destructive">{orderSearchError}</p>}
+                      {errors.exchangeOrder && <p className="text-sm text-destructive">{errors.exchangeOrder}</p>}
+                    </div>
+
+                    {isSearchingOrder && (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      </div>
+                    )}
+
+                    {exchangeOrder && !isSearchingOrder && (
+                      <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Package className="w-4 h-4" />
+                          <span>Itens do Pedido ({exchangeOrder.produtos?.length || 0})</span>
+                        </div>
+
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {exchangeOrder.produtos?.map((item: any, index: number) => {
+                            const itemId = getItemId(item) || `index-${index}`
+                            const safeProd = item.produto || item
+                            const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia || "-"
+                            return (
+                              <div key={itemId} className="flex items-start gap-2 p-2 bg-background rounded border">
+                                <Checkbox
+                                  id={`item-${itemId}`}
+                                  checked={selectedExchangeItems.includes(itemId)}
+                                  onCheckedChange={() => handleToggleExchangeItem(itemId)}
+                                />
+                                <div className="space-y-1">
+                                  <Label htmlFor={`item-${itemId}`} className="font-medium cursor-pointer">
+                                    <span className="text-muted-foreground mr-1 text-xs">#{code}</span>
+                                    {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
+                                  </Label>
+                                  <p className="text-xs text-muted-foreground">
+                                    Qtd: {item.produto?.quantidade || item.quantidade} | Valor: {formatPrice(Number(item.produto?.valor_venda || item.valor_venda || 0))}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {errors.exchangeItems && <p className="text-sm text-destructive">{errors.exchangeItems}</p>}
+
+                        <div className="space-y-2">
+                          <Label>Motivo da Troca</Label>
+                          <RadioGroup value={exchangeReason} onValueChange={setExchangeReason}>
+                            {exchangeReasons.map((reason) => (
+                              <div key={reason} className="flex items-center space-x-2">
+                                <RadioGroupItem value={reason} id={`reason-${reason}`} />
+                                <Label htmlFor={`reason-${reason}`}>{reason}</Label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                          {errors.exchangeReason && <p className="text-sm text-destructive">{errors.exchangeReason}</p>}
+                        </div>
+
+                        {exchangeReason === "Outros" && (
+                          <div className="space-y-2">
+                            <Label htmlFor="exchangeDescription">Descreva o motivo</Label>
+                            <Textarea
+                              id="exchangeDescription"
+                              value={exchangeDescription}
+                              onChange={(e) => setExchangeDescription(e.target.value)}
+                              placeholder="Descreva detalhadamente o problema..."
+                            />
+                            {errors.exchangeDescription && <p className="text-sm text-destructive">{errors.exchangeDescription}</p>}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Returned Item Credit Flow - REFACTORED */}
+                {formData.paymentMethods.includes("Credito Peça Devolvida") && (
+                  <div className="mt-4 pt-4 border-t space-y-4 animate-in fade-in slide-in-from-top-4">
+                    <div className="space-y-2">
+                      <Label>Selecione o Pedido Original</Label>
+                      {isLoadingOrders ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Carregando pedidos...
+                        </div>
+                      ) : (
+                        <Select
+                          value={exchangeOrderId}
+                          onValueChange={handleSelectOrder}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um pedido..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customerOrders.length > 0 ? (
+                              customerOrders.map((order) => (
+                                <SelectItem key={order.id} value={order.id}>
+                                  Pedido #{order.codigo || order.numero || order.id} - {formatDateDisplay(order.data_criacao || order.data)} - {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.total || order.valor_total || 0)}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="none" disabled>Nenhum pedido encontrado</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {errors.exchangeOrder && <p className="text-sm text-destructive">{errors.exchangeOrder}</p>}
+                    </div>
+
+                    {isSearchingOrder && (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      </div>
+                    )}
+
+                    {exchangeOrder && !isSearchingOrder && (
+                      <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Package className="w-4 h-4" />
+                          <span>Selecione a(s) Peça(s) Devolvida(s)</span>
+                        </div>
+
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {exchangeOrder.produtos?.map((item: any, index: number) => {
+                            const itemId = getItemId(item) || `index-${index}`
+                            const safeProd = item.produto || item
+                            const code = safeProd.codigo || safeProd.codigo_interno || item.codigo || safeProd.referencia || "-"
+                            return (
+                              <div key={itemId} className="flex items-start gap-2 p-2 bg-background rounded border">
+                                <Checkbox
+                                  id={`returned-item-${itemId}`}
+                                  checked={selectedExchangeItems.includes(itemId)}
+                                  onCheckedChange={() => handleToggleExchangeItem(itemId)}
+                                />
+                                <div className="space-y-1">
+                                  <Label htmlFor={`returned-item-${itemId}`} className="font-medium cursor-pointer">
+                                    <span className="text-muted-foreground mr-1 text-xs">#{code}</span>
+                                    {item.produto?.nome_produto || item.nome_produto || "Produto sem nome"}
+                                  </Label>
+                                  <p className="text-xs text-muted-foreground">
+                                    Valor: {formatPrice(Number(item.produto?.valor_venda || item.valor_venda || 0))}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {errors.exchangeItems && <p className="text-sm text-destructive">{errors.exchangeItems}</p>}
+
+                        <div className="space-y-4">
+                          {/* Situation Radio Group */}
+                          <div className="space-y-2">
+                            <Label className="text-base">Situação da Peça *</Label>
+                            <RadioGroup
+                              value={returnedItemSituation}
+                              onValueChange={(val: "Boa" | "Ruim") => {
+                                setReturnedItemSituation(val)
+                                setReturnedItemReason("")
+                                setReturnedItemCustomReason("")
+                                if (val === "Ruim") {
+                                  setReturnedItemConditionOption("")
+                                }
+                              }}
+                              className="flex gap-4"
+                            >
+                              <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                <RadioGroupItem value="Boa" id="sit-boa" />
+                                <Label htmlFor="sit-boa" className="cursor-pointer w-full font-medium">Boa (Sem avarias)</Label>
+                              </div>
+                              <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
+                                <RadioGroupItem value="Ruim" id="sit-ruim" />
+                                <Label htmlFor="sit-ruim" className="cursor-pointer w-full font-medium">Ruim (Com defeito/avaria)</Label>
+                              </div>
+                            </RadioGroup>
+                            {errors.returnedItemSituation && <p className="text-sm text-destructive">{errors.returnedItemSituation}</p>}
+                          </div>
+
+                          {/* Condition Radio Group (Only if Boa) */}
+                          {returnedItemSituation === "Boa" && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                              <Label className="text-base">Condição da Peça *</Label>
+                              <RadioGroup
+                                value={returnedItemConditionOption}
+                                onValueChange={(val: "Nova" | "Usada") => {
+                                  setReturnedItemConditionOption(val)
                                 }}
                                 className="flex gap-4"
                               >
                                 <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
-                                  <RadioGroupItem value="Boa" id="sit-boa" />
-                                  <Label htmlFor="sit-boa" className="cursor-pointer w-full font-medium">Boa (Sem avarias)</Label>
+                                  <RadioGroupItem value="Nova" id="cond-nova" />
+                                  <Label htmlFor="cond-nova" className="cursor-pointer w-full font-medium">Nova</Label>
                                 </div>
                                 <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
-                                  <RadioGroupItem value="Ruim" id="sit-ruim" />
-                                  <Label htmlFor="sit-ruim" className="cursor-pointer w-full font-medium">Ruim (Com defeito/avaria)</Label>
+                                  <RadioGroupItem value="Usada" id="cond-usada" />
+                                  <Label htmlFor="cond-usada" className="cursor-pointer w-full font-medium">Usada</Label>
                                 </div>
                               </RadioGroup>
-                              {errors.returnedItemSituation && <p className="text-sm text-destructive">{errors.returnedItemSituation}</p>}
+                              {errors.returnedItemConditionOption && <p className="text-sm text-destructive">{errors.returnedItemConditionOption}</p>}
                             </div>
+                          )}
 
-                            {/* Condition Radio Group (Only if Boa) */}
-                            {returnedItemSituation === "Boa" && (
-                              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <Label className="text-base">Condição da Peça *</Label>
-                                <RadioGroup
-                                  value={returnedItemConditionOption}
-                                  onValueChange={(val: "Nova" | "Usada") => {
-                                    setReturnedItemConditionOption(val)
-                                  }}
-                                  className="flex gap-4"
-                                >
-                                  <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
-                                    <RadioGroupItem value="Nova" id="cond-nova" />
-                                    <Label htmlFor="cond-nova" className="cursor-pointer w-full font-medium">Nova</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2 border rounded-lg p-2 w-full cursor-pointer hover:bg-accent/50 transition-colors">
-                                    <RadioGroupItem value="Usada" id="cond-usada" />
-                                    <Label htmlFor="cond-usada" className="cursor-pointer w-full font-medium">Usada</Label>
-                                  </div>
-                                </RadioGroup>
-                                {errors.returnedItemConditionOption && <p className="text-sm text-destructive">{errors.returnedItemConditionOption}</p>}
-                              </div>
-                            )}
+                          {/* Reason Select */}
+                          {(returnedItemConditionOption || returnedItemSituation === "Ruim") && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                              <Label htmlFor="reasonSelect">Motivo da Devolução *</Label>
+                              <Select
+                                value={returnedItemReason}
+                                onValueChange={(val) => {
+                                  setReturnedItemReason(val)
+                                  if (val !== "Outros") {
+                                    setReturnedItemCustomReason("")
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className={errors.returnedItemReason ? "border-destructive" : ""}>
+                                  <SelectValue placeholder="Selecione o motivo..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {getReturnedItemReasons().map(r => (
+                                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {errors.returnedItemReason && <p className="text-sm text-destructive">{errors.returnedItemReason}</p>}
+                            </div>
+                          )}
 
-                            {/* Reason Select */}
-                            {(returnedItemConditionOption || returnedItemSituation === "Ruim") && (
-                              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <Label htmlFor="reasonSelect">Motivo da Devolução *</Label>
-                                <Select
-                                  value={returnedItemReason}
-                                  onValueChange={(val) => {
-                                    setReturnedItemReason(val)
-                                    if (val !== "Outros") {
-                                      setReturnedItemCustomReason("")
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className={errors.returnedItemReason ? "border-destructive" : ""}>
-                                    <SelectValue placeholder="Selecione o motivo..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {getReturnedItemReasons().map(r => (
-                                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                {errors.returnedItemReason && <p className="text-sm text-destructive">{errors.returnedItemReason}</p>}
-                              </div>
-                            )}
-
-                            {/* Custom Reason Input */}
-                            {returnedItemReason === "Outros" && (
-                              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <Label htmlFor="customReason">Descreva o motivo *</Label>
-                                <Input
-                                  id="customReason"
-                                  placeholder={returnedItemSituation === "Boa" ? "Ex: Não gostei do modelo..." : "Ex: Tela piscando..."}
-                                  value={returnedItemCustomReason}
-                                  onChange={(e) => setReturnedItemCustomReason(e.target.value)}
-                                  className={errors.returnedItemCustomReason ? "border-destructive" : ""}
-                                />
-                                {errors.returnedItemCustomReason && <p className="text-sm text-destructive">{errors.returnedItemCustomReason}</p>}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Value Comparison Logic */}
-                          {selectedExchangeItems.length > 0 && (() => {
-                            const selectedItems = exchangeOrder.produtos?.filter((item: any) => selectedExchangeItems.includes(getItemId(item))) || []
-                            if (selectedItems.length === 0) return null
-
-                            const itemValue = selectedItems.reduce((acc: number, item: any) => acc + Number(item.produto?.valor_venda || item.valor_venda || 0), 0)
-                            const difference = itemValue - total
-
-                            return (
-                              <div className="space-y-4 pt-4 border-t border-dashed">
-                                <div className="text-sm space-y-1">
-                                  <div className="flex justify-between">
-                                    <span>Valor Peça Antiga:</span>
-                                    <span className="font-medium">{formatPrice(itemValue)}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Valor Nova Compra:</span>
-                                    <span className="font-medium">{formatPrice(total)}</span>
-                                  </div>
-                                  <div className="flex justify-between font-bold text-base pt-1 border-t">
-                                    <span>{difference >= 0 ? "Sobrou:" : "Falta Pagar:"}</span>
-                                    <span className={difference >= 0 ? "text-green-600" : "text-red-600"}>
-                                      {formatPrice(Math.abs(difference))}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {difference > 0 && (
-                                  <div className="space-y-3 p-3 bg-green-50 rounded-md border border-green-100">
-                                    <Label>Como deseja receber a diferença?</Label>
-                                    <RadioGroup value={returnAction} onValueChange={(v: "credit" | "refund") => setReturnAction(v)}>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="credit" id="ra-credit" />
-                                        <Label htmlFor="ra-credit">Gerar Crédito na Loja</Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="refund" id="ra-refund" />
-                                        <Label htmlFor="ra-refund">Estorno (Devolução)</Label>
-                                      </div>
-                                    </RadioGroup>
-
-                                    {returnAction === "refund" && (
-                                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                        <Label htmlFor="refundPixKey">Chave Pix para Estorno *</Label>
-                                        <Input
-                                          id="refundPixKey"
-                                          value={refundPixKey}
-                                          onChange={e => setRefundPixKey(e.target.value)}
-                                          placeholder="CPF, Email ou Telefone"
-                                          className={errors.refundPixKey ? "border-destructive" : ""}
-                                        />
-                                        {errors.refundPixKey && <p className="text-sm text-destructive">{errors.refundPixKey}</p>}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                {difference < 0 && (
-                                  <div className="space-y-3 p-3 bg-red-50 rounded-md border border-red-100">
-                                    <Label>Como deseja pagar a diferença?</Label>
-                                    <RadioGroup value={remainingPaymentMethod} onValueChange={(v: "pix" | "money") => setRemainingPaymentMethod(v)}>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="pix" id="pm-pix" />
-                                        <Label htmlFor="pm-pix">PIX</Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="money" id="pm-money" />
-                                        <Label htmlFor="pm-money">Dinheiro</Label>
-                                      </div>
-                                    </RadioGroup>
-
-
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })()}
+                          {/* Custom Reason Input */}
+                          {returnedItemReason === "Outros" && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                              <Label htmlFor="customReason">Descreva o motivo *</Label>
+                              <Input
+                                id="customReason"
+                                placeholder={returnedItemSituation === "Boa" ? "Ex: Não gostei do modelo..." : "Ex: Tela piscando..."}
+                                value={returnedItemCustomReason}
+                                onChange={(e) => setReturnedItemCustomReason(e.target.value)}
+                                className={errors.returnedItemCustomReason ? "border-destructive" : ""}
+                              />
+                              {errors.returnedItemCustomReason && <p className="text-sm text-destructive">{errors.returnedItemCustomReason}</p>}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+
+                        {/* Value Comparison Logic */}
+                        {selectedExchangeItems.length > 0 && (() => {
+                          const selectedItems = exchangeOrder.produtos?.filter((item: any) => selectedExchangeItems.includes(getItemId(item))) || []
+                          if (selectedItems.length === 0) return null
+
+                          const itemValue = selectedItems.reduce((acc: number, item: any) => acc + Number(item.produto?.valor_venda || item.valor_venda || 0), 0)
+                          const difference = itemValue - total
+
+                          return (
+                            <div className="space-y-4 pt-4 border-t border-dashed">
+                              <div className="text-sm space-y-1">
+                                <div className="flex justify-between">
+                                  <span>Valor Peça Antiga:</span>
+                                  <span className="font-medium">{formatPrice(itemValue)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Valor Nova Compra:</span>
+                                  <span className="font-medium">{formatPrice(total)}</span>
+                                </div>
+                                <div className="flex justify-between font-bold text-base pt-1 border-t">
+                                  <span>{difference >= 0 ? "Sobrou:" : "Falta Pagar:"}</span>
+                                  <span className={difference >= 0 ? "text-green-600" : "text-red-600"}>
+                                    {formatPrice(Math.abs(difference))}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {difference > 0 && (
+                                <div className="space-y-3 p-3 bg-green-50 rounded-md border border-green-100">
+                                  <Label>Como deseja receber a diferença?</Label>
+                                  <RadioGroup value={returnAction} onValueChange={(v: "credit" | "refund") => setReturnAction(v)}>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="credit" id="ra-credit" />
+                                      <Label htmlFor="ra-credit">Gerar Crédito na Loja</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="refund" id="ra-refund" />
+                                      <Label htmlFor="ra-refund">Estorno (Devolução)</Label>
+                                    </div>
+                                  </RadioGroup>
+
+                                  {returnAction === "refund" && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                      <Label htmlFor="refundPixKey">Chave Pix para Estorno *</Label>
+                                      <Input
+                                        id="refundPixKey"
+                                        value={refundPixKey}
+                                        onChange={e => setRefundPixKey(e.target.value)}
+                                        placeholder="CPF, Email ou Telefone"
+                                        className={errors.refundPixKey ? "border-destructive" : ""}
+                                      />
+                                      {errors.refundPixKey && <p className="text-sm text-destructive">{errors.refundPixKey}</p>}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {difference < 0 && (
+                                <div className="space-y-3 p-3 bg-red-50 rounded-md border border-red-100">
+                                  <Label>Como deseja pagar a diferença?</Label>
+                                  <RadioGroup value={remainingPaymentMethod} onValueChange={(v: "pix" | "money") => setRemainingPaymentMethod(v)}>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="pix" id="pm-pix" />
+                                      <Label htmlFor="pm-pix">PIX</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="money" id="pm-money" />
+                                      <Label htmlFor="pm-money">Dinheiro</Label>
+                                    </div>
+                                  </RadioGroup>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="deliveryDate">Data de Entrega Preferida *</Label>

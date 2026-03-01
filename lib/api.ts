@@ -891,7 +891,7 @@ class BetelAPI {
     customer: Customer
     items: Array<{ product: Product; quantity: number; subtotal: number }>
     observations?: string
-    paymentMethod?: string
+    paymentMethods?: string[]
     deliveryDate?: string
     deliveryMethod?: string // Added
     topiqueiroName?: string // Added
@@ -961,78 +961,83 @@ class BetelAPI {
       }
 
       // Fetch available payment methods to get correct ID and Name
-      let paymentMethodId = "640517" // Default fallback (Dinheiro)
-      let paymentMethodName = "Dinheiro à Vista"
+      const mappedPagamentos: any[] = []
+      let isParcelado = false
 
-      if (sale.paymentMethod) {
+      if (sale.paymentMethods && sale.paymentMethods.length > 0) {
+        if (sale.paymentMethods.length > 1) {
+          isParcelado = true
+        }
+
         try {
           const availablePaymentMethods = await this.getPaymentMethods()
-          const methodKey = sale.paymentMethod.toLowerCase()
 
-          let selectedMethod = availablePaymentMethods.find(pm =>
-            pm.nome.toLowerCase() === methodKey
-          )
+          // Split total value equally for demonstration, or exact if we had values
+          const valorPorPagamento = (Number(totalValue) / sale.paymentMethods.length).toFixed(2)
 
-          // Fallback mappings
-          if (!selectedMethod) {
-            if (methodKey === 'pix') {
-              // Prioritize "Pix" exact match if available
-              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === 'pix')
-              if (!selectedMethod) {
-                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('pix'))
-              }
-            } else if (methodKey === 'dinheiro_vista') {
-              // Priority 1: Exact match "Dinheiro à Vista" or "Dinheiro a Vista"
-              selectedMethod = availablePaymentMethods.find(pm =>
-                pm.nome.toLowerCase() === 'dinheiro à vista' ||
-                pm.nome.toLowerCase() === 'dinheiro a vista'
-              )
+          for (const method of sale.paymentMethods) {
+            const methodKey = method.toLowerCase()
+            let selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === methodKey)
 
-              // Priority 2: Starts with "Dinheiro" (Avoids "Dia Anterior (Dinheiro)")
-              if (!selectedMethod) {
-                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().startsWith('dinheiro'))
+            // Fallback mappings
+            if (!selectedMethod) {
+              if (methodKey === 'pix') {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === 'pix') || availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('pix'))
+              } else if (methodKey === 'dinheiro_vista') {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === 'dinheiro à vista' || pm.nome.toLowerCase() === 'dinheiro a vista') || availablePaymentMethods.find(pm => pm.nome.toLowerCase().startsWith('dinheiro')) || availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('dinheiro'))
+              } else if (methodKey === 'a_prazo') {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === 'a prazo') || availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('prazo') || pm.nome.toLowerCase().includes('crediário') || pm.nome.toLowerCase().includes('credito loja'))
+              } else if (methodKey === 'a_receber') {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === 'a receber') || availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('receber'))
+              } else if (methodKey === 'cartao_credito') {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('crédito') || pm.nome.toLowerCase().includes('credito'))
+              } else if (methodKey === 'cartao_debito') {
+                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('débito') || pm.nome.toLowerCase().includes('debito'))
               }
-
-              // Priority 3: Fuzzy match (Last resort)
-              if (!selectedMethod) {
-                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('dinheiro'))
-              }
-            } else if (methodKey === 'a_prazo') {
-              selectedMethod = availablePaymentMethods.find(pm =>
-                pm.nome.toLowerCase() === 'a prazo'
-              )
-              if (!selectedMethod) {
-                selectedMethod = availablePaymentMethods.find(pm =>
-                  pm.nome.toLowerCase().includes('prazo') ||
-                  pm.nome.toLowerCase().includes('crediário') ||
-                  pm.nome.toLowerCase().includes('credito loja')
-                )
-              }
-            } else if (methodKey === 'a_receber') {
-              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase() === 'a receber')
-              if (!selectedMethod) {
-                selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('receber'))
-              }
-            } else if (methodKey === 'cartao_credito') {
-              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('crédito') || pm.nome.toLowerCase().includes('credito'))
-            } else if (methodKey === 'cartao_debito') {
-              selectedMethod = availablePaymentMethods.find(pm => pm.nome.toLowerCase().includes('débito') || pm.nome.toLowerCase().includes('debito'))
             }
-          }
 
-          if (selectedMethod) {
-            paymentMethodId = selectedMethod.id
-            paymentMethodName = selectedMethod.nome
-            console.log(`[v0] Mapped payment method '${sale.paymentMethod}' to ID: ${paymentMethodId}, Name: ${paymentMethodName}`)
-          } else {
-            console.warn(`[v0] Could not map payment method '${sale.paymentMethod}' to API method. Using default.`)
-            // If it's a custom string (like "Troca"), use it as name but keep default ID or use specific logic? 
-            // Ideally we shouldn't send an invalid ID. But for now, let's update name at least.
-            paymentMethodName = sale.paymentMethod
+            let paymentMethodId = "640517" // Default fallback (Dinheiro)
+            let paymentMethodName = "Dinheiro à Vista"
+
+            if (selectedMethod) {
+              paymentMethodId = selectedMethod.id
+              paymentMethodName = selectedMethod.nome
+              console.log(`[v0] Mapped payment method '${method}' to ID: ${paymentMethodId}, Name: ${paymentMethodName}`)
+            } else {
+              console.warn(`[v0] Could not map payment method '${method}' to API method. Using text.`)
+              paymentMethodName = method
+            }
+
+            mappedPagamentos.push({
+              pagamento: {
+                data_vencimento: new Date().toISOString().split("T")[0],
+                valor: valorPorPagamento,
+                forma_pagamento_id: paymentMethodId,
+                nome_forma_pagamento: paymentMethodName,
+                plano_contas_id: "2514",
+                nome_plano_conta: "Prestações de serviçosAC",
+                observacao: ""
+              }
+            })
           }
         } catch (e) {
           console.error("[v0] Error fetching payment methods for mapping:", e)
         }
+      }
+
+      // If no valid mapping could be made or none passed, default safely
+      if (mappedPagamentos.length === 0) {
+        mappedPagamentos.push({
+          pagamento: {
+            data_vencimento: new Date().toISOString().split("T")[0],
+            valor: totalValue,
+            forma_pagamento_id: "640517", // Dinheiro
+            nome_forma_pagamento: "Dinheiro à Vista",
+            plano_contas_id: "2514",
+            nome_plano_conta: "Prestações de serviçosAC",
+            observacao: ""
+          }
+        })
       }
 
       const saleData = {
@@ -1050,22 +1055,9 @@ class BetelAPI {
         centro_custo_id: "1", // As per example
         valor_frete: "0.00",
         observacoes: sale.observations || "", // Added payload field for observations
-        condicao_pagamento: "a_vista",
+        condicao_pagamento: isParcelado ? "parcelado" : "a_vista",
 
-        pagamentos: [
-          {
-            pagamento: {
-              data_vencimento: new Date().toISOString().split("T")[0],
-              valor: totalValue, // "25" in example
-              forma_pagamento_id: paymentMethodId,
-              nome_forma_pagamento: paymentMethodName,
-              plano_contas_id: "2514", // As per example
-              nome_plano_conta: "Prestações de serviçosAC", // As per example
-              observacao: "" // Payment specific observation
-            }
-          }
-          // Note: Example has 2 payments, we are doing existing logic of 1 payment for total for now
-        ],
+        pagamentos: mappedPagamentos,
         atributos: atributos, // Added attributes array
         produtos: sale.items.map((item) => ({
           produto: {
