@@ -751,6 +751,13 @@ export function OrderForm(props: OrderFormProps) {
             // Remaining to pay
             observations += `Situação: Faltam ${formatPrice(Math.abs(difference))}.\n`
             observations += `Forma de Pagamento Restante: ${remainingPaymentMethod === "pix" ? "PIX" : "Dinheiro"}\n`
+
+            const realRemainingMethod = remainingPaymentMethod === "pix" ? "pix" : "dinheiro_vista"
+            dataToSubmit.paymentMethods = ["Credito Peça Devolvida", realRemainingMethod]
+            dataToSubmit.paymentValues = {
+              "Credito Peça Devolvida": itemValue.toFixed(2).replace('.', ','),
+              [realRemainingMethod]: Math.abs(difference).toFixed(2).replace('.', ',')
+            }
           }
 
           dataToSubmit.observations = observations
@@ -1311,6 +1318,10 @@ export function OrderForm(props: OrderFormProps) {
                             onCheckedChange={(checked) => {
                               setFormData((prev) => {
                                 let newMethods: string[] = []
+
+                                const returnedItems = exchangeOrder?.produtos?.filter((item: any) => selectedExchangeItems.includes(getItemId(item))) || []
+                                const returnedItemValue = returnedItems.reduce((acc: number, item: any) => acc + Number(item.produto?.valor_venda || item.valor_venda || 0), 0)
+
                                 if (checked) {
                                   if (["a_prazo", "Troca", "Credito Peça Devolvida"].includes(method.id)) {
                                     // Make "A Prazo", "Troca" and "Credito Peça Devolvida" exclusive.
@@ -1322,6 +1333,7 @@ export function OrderForm(props: OrderFormProps) {
                                 } else {
                                   newMethods = prev.paymentMethods.filter((id) => id !== method.id)
                                 }
+
                                 return { ...prev, paymentMethods: newMethods }
                               })
                             }}
