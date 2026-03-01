@@ -634,35 +634,35 @@ export function OrderForm(props: OrderFormProps) {
 
             obsTopiqueiro += `Nome: ${selectedCarrier.nome}\n`
             obsTopiqueiro += `Telefone: ${selectedCarrier.celular || selectedCarrier.telefone || "Não informado"}\n`
+            obsTopiqueiro += `Observação: ${selectedCarrier.observacoes || "Nenhuma"}\n`
 
             if (selectedCarrier.endereco) {
               const { logradouro, numero, bairro, nome_cidade, estado, complemento } = selectedCarrier.endereco
-              obsTopiqueiro += `Endereço:\n`
-              obsTopiqueiro += `${logradouro || ""} ${numero || "S/N"}\n`
-              obsTopiqueiro += `Bairro: ${bairro || ""}\n`
+              obsTopiqueiro += `Endereço: ${logradouro || ""}, ${numero || "S/N"} - ${bairro || ""}\n`
               obsTopiqueiro += `Cidade: ${nome_cidade || ""} / ${estado || ""}\n`
-              obsTopiqueiro += `Horário de chegada: ${complemento || "Não informado"}`
+              obsTopiqueiro += `Horario Chegada: ${complemento || "Não informado"}`
             } else {
-              obsTopiqueiro += `Endereço:\nNão informado\n`
-              obsTopiqueiro += `Horário de chegada: Não informado`
+              obsTopiqueiro += `Endereço: Não informado\n`
+              obsTopiqueiro += `Cidade: Não informada\n`
+              obsTopiqueiro += `Horario Chegada: Não informado`
             }
             dataToSubmit.observations = (dataToSubmit.observations || "") + obsTopiqueiro
           }
         } else {
           obsTopiqueiro += `Nome: ${formData.topiqueiroName}\n`
           obsTopiqueiro += `Telefone: ${formData.topiqueiroPhone}\n`
+          obsTopiqueiro += `Observação: Nenhuma\n`
 
           if (formData.topiqueiroAddress) {
             const { rua, numero, bairro, cidade, estado } = formData.topiqueiroAddress
-            obsTopiqueiro += `Endereço:\n`
-            obsTopiqueiro += `${rua || ""} ${numero || "S/N"}\n`
-            obsTopiqueiro += `Bairro: ${bairro || ""}\n`
+            obsTopiqueiro += `Endereço: ${rua || ""}, ${numero || "S/N"} - ${bairro || ""}\n`
             obsTopiqueiro += `Cidade: ${cidade || ""} / ${estado || ""}\n`
           } else {
-            obsTopiqueiro += `Endereço:\nNão informado\n`
+            obsTopiqueiro += `Endereço: Não informado\n`
+            obsTopiqueiro += `Cidade: Não informada\n`
           }
 
-          obsTopiqueiro += `Horário de chegada: ${formData.topiqueiroTime || "Não informado"}`
+          obsTopiqueiro += `Horario Chegada: ${formData.topiqueiroTime || "Não informado"}`
           dataToSubmit.observations = (dataToSubmit.observations || "") + obsTopiqueiro
         }
       }
