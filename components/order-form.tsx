@@ -731,7 +731,13 @@ export function OrderForm(props: OrderFormProps) {
 
           // Build Smart Observations
           observations += `\n\n--- DETALHES CRÉDITO PEÇAS DEVOLVIDAS ---\n`
-          observations += `Peças: ${piecesText}\n`
+          observations += `Pedido Anterior: ${exchangeOrder.codigo || exchangeOrder.id || exchangeOrderId}\n`
+          observations += `Peças:\n${selectedItems.map((selectedItem: any) => {
+            const safeProd = selectedItem.produto || selectedItem
+            const itemCode = safeProd.codigo || safeProd.codigo_interno || selectedItem.codigo || safeProd.referencia
+            const finalItemCode = itemCode || "No Code"
+            return `- ${finalItemCode} - ${safeProd.nome_produto || selectedItem.nome_produto}`
+          }).join("\n")}\n`
           observations += `Estado: ${finalConditionData}\n`
           observations += `Valor Total Peças Antigas: ${formatPrice(itemValue)}\n`
           observations += `Valor Nova Compra: ${formatPrice(total)}\n`
